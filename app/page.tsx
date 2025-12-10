@@ -67,30 +67,55 @@ export default function Home() {
           </div>
 
           {/* Dashboard mockup */}
-          <div className="rounded-2xl p-6 bg-[radial-gradient(circle,rgba(26,115,232,0.06)_0%,transparent_60%)]">
-            <div className="bg-white rounded-xl shadow-lg p-4 max-w-md mx-auto">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm text-slate-500">Warehouse</div>
-                  <div className="font-semibold">Office Supplies</div>
-                </div>
-                <div className="text-xs text-slate-400">Updated 2h ago</div>
-              </div>
+          <div className="bg-white rounded-xl shadow-lg p-4 max-w-md mx-auto">
+  <div className="flex items-center justify-between">
+    <div>
+      <div className="text-sm text-slate-500">Warehouse</div>
+      <div className="font-semibold">Office Supplies</div>
+    </div>
+    <div className="text-xs text-slate-400">Updated 2h ago</div>
+  </div>
 
-              {/* item bars */}
-              <div className="mt-4">
-                <ItemBar label="Paper Towels" status="Low — 2 days" percent={20} color="bg-amber-400" />
-                <ItemBar label="Printer Toner" status="OK — 21 days" percent={60} color="bg-green-400" />
-                <ItemBar label="Hand Soap" status="Due — today" percent={10} color="bg-red-400" />
-              </div>
+  {/* Item 1 */}
+  <div className="mt-4">
+    <div className="flex items-center justify-between text-sm text-slate-600">
+      <div>Paper Towels</div>
+      <div className="font-medium text-slate-800">Low — 2 days</div>
+    </div>
+    <div className="mt-2 h-2 bg-slate-100 rounded-full overflow-hidden">
+      <div className="h-2 bg-amber-400 w-[20%]"></div>
+    </div>
+  </div>
 
-              <div className="mt-4 flex justify-between items-center text-sm">
-                <div className="text-slate-500">Next: Paper Towels</div>
-                <button className="bg-sky-600 text-white px-3 py-1 rounded">Reorder</button>
-              </div>
-            </div>
-          </div>
+  {/* Item 2 */}
+  <div className="mt-4">
+    <div className="flex items-center justify-between text-sm text-slate-600">
+      <div>Printer Toner</div>
+      <div className="font-medium text-slate-800">OK — 21 days</div>
+    </div>
+    <div className="mt-2 h-2 bg-slate-100 rounded-full overflow-hidden">
+      <div className="h-2 bg-green-400 w-[60%]"></div>
+    </div>
+  </div>
+
+  {/* Item 3 */}
+  <div className="mt-4">
+    <div className="flex items-center justify-between text-sm text-slate-600">
+      <div>Hand Soap</div>
+      <div className="font-medium text-slate-800">Due — today</div>
+    </div>
+    <div className="mt-2 h-2 bg-slate-100 rounded-full overflow-hidden">
+      <div className="h-2 bg-red-400 w-[10%]"></div>
+    </div>
+  </div>
+
+  <div className="mt-4 flex justify-between items-center text-sm">
+    <div className="text-slate-500">Next: Paper Towels</div>
+    <button className="bg-sky-600 text-white px-3 py-1 rounded">Reorder</button>
+  </div>
+</div>
         </div>
+
 
         {/* HOW IT WORKS */}
         <section id="how" className="mt-16">
