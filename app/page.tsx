@@ -67,7 +67,7 @@ export default function Home() {
           </div>
 
           {/* Dashboard mockup */}
-          <div className="bg-white rounded-xl shadow-lg p-4 max-w-md mx-auto">
+    <div className="bg-white rounded-xl shadow-lg p-4 w-full max-w-md">
   <div className="flex items-center justify-between">
     <div>
       <div className="text-sm text-slate-500">Warehouse</div>
