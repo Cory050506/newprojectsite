@@ -24,6 +24,13 @@ export default function DashboardHome() {
         Welcome back, {user?.email}! Here are your usage stats.
       </p>
 
+      <nav className="flex flex-col gap-2">
+  <a href="/dashboard" className="nav-item">📊 Dashboard</a>
+  <a href="/dashboard/items" className="nav-item">📦 Items</a>
+  <a href="/dashboard/settings" className="nav-item">⚙️ Settings</a>
+</nav>
+
+
       {/* Stats cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10">
         <div className="p-6 bg-white rounded-xl shadow">
