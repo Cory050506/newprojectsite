@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../../lib/firebase"; // changed to relative path to avoid unresolved '@/firebase' alias
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { auth, db } from "../../lib/firebase";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 
 export default function SignupPage() {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -16,8 +18,22 @@ export default function SignupPage() {
     setError("");
 
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
-      window.location.href = "/dashboard"; // temporary redirect
+      // Create auth account
+      const userCred = await createUserWithEmailAndPassword(auth, email, password);
+
+      // Set FirebaseAuth displayName
+      await updateProfile(userCred.user, {
+        displayName: name,
+      });
+
+      // Save user Firestore profile
+      await setDoc(doc(db, "users", userCred.user.uid), {
+        name,
+        email,
+        createdAt: serverTimestamp(),
+      });
+
+      window.location.href = "/dashboard";
     } catch (err: any) {
       setError(err.message || "Signup failed");
     }
@@ -37,14 +53,27 @@ export default function SignupPage() {
         )}
 
         <a
-  href="/"
-  className="absolute top-6 left-6 text-sky-600 font-medium hover:underline"
->
-  ← Back to Home
-</a>
-
+          href="/"
+          className="absolute top-6 left-6 text-sky-600 font-medium hover:underline"
+        >
+          ← Back to Home
+        </a>
 
         <form onSubmit={handleSignup} className="mt-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-zinc-700">
+              Full Name
+            </label>
+            <input
+              type="text"
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="mt-1 w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-sky-500"
+              placeholder="Your full name"
+            />
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-zinc-700">
               Email

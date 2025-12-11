@@ -1,149 +1,437 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { auth } from "../../../lib/firebase";
-import { onAuthStateChanged, updateProfile } from "firebase/auth";
 import { useRouter } from "next/navigation";
-
+import { auth, db } from "../../../lib/firebase";
+import {
+  onAuthStateChanged,
+  updatePassword,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  updateProfile,
+  deleteUser,
+} from "firebase/auth";
+import {
+  doc,
+  onSnapshot,
+  updateDoc,
+  deleteDoc,
+} from "firebase/firestore";
 import { motion } from "framer-motion";
 
 export default function SettingsPage() {
   const router = useRouter();
+
   const [user, setUser] = useState<any>(null);
+  const [loadingUser, setLoadingUser] = useState(true);
 
-  const [displayName, setDisplayName] = useState("");
-  const [theme, setTheme] = useState("light");
-  const [saving, setSaving] = useState(false);
+  const [name, setName] = useState("");
+  const [emailNotifications, setEmailNotifications] = useState(true);
+  const [lowStockAlerts, setLowStockAlerts] = useState(true);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
 
-  // -----------------------------
-  // AUTH CHECK
-  // -----------------------------
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [savingPrefs, setSavingPrefs] = useState(false);
+
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [passwordMsg, setPasswordMsg] = useState<string | null>(null);
+
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+
+  const [error, setError] = useState<string | null>(null);
+
+  // AUTH
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
-      if (!u) return router.push("/login");
-
-      setUser(u);
-      setDisplayName(u.displayName || "");
+      if (!u) {
+        router.push("/login");
+      } else {
+        setUser(u);
+        setLoadingUser(false);
+      }
     });
-
     return () => unsub();
   }, [router]);
 
-  // -----------------------------
-  // SAVE PROFILE
-  // -----------------------------
-  async function handleSaveProfile() {
+  // LOAD USER PROFILE DOC
+  useEffect(() => {
     if (!user) return;
-    setSaving(true);
+
+    const ref = doc(db, "users", user.uid);
+    const unsub = onSnapshot(ref, (snap) => {
+      const data: any = snap.data() || {};
+
+      setName(data.name || user.displayName || "");
+      setEmailNotifications(
+        data.emailNotifications !== undefined ? data.emailNotifications : true
+      );
+      setLowStockAlerts(
+        data.lowStockAlerts !== undefined ? data.lowStockAlerts : true
+      );
+      const t: "light" | "dark" = data.theme === "dark" ? "dark" : "light";
+      setTheme(t);
+
+      if (typeof window !== "undefined") {
+        document.documentElement.classList.toggle("dark", t === "dark");
+        window.localStorage.setItem("sp-theme", t);
+      }
+    });
+
+    return () => unsub();
+  }, [user]);
+
+  // SAVE PROFILE (NAME)
+  async function handleSaveProfile(e: React.FormEvent) {
+    e.preventDefault();
+    if (!user) return;
+    setError(null);
+    setSavingProfile(true);
 
     try {
-      await updateProfile(user, {
-        displayName: displayName,
+      if (name.trim()) {
+        await updateProfile(user, { displayName: name.trim() });
+        await updateDoc(doc(db, "users", user.uid), {
+          name: name.trim(),
+        });
+      }
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Failed to save profile.");
+    } finally {
+      setSavingProfile(false);
+    }
+  }
+
+  // SAVE PREFERENCES (notifications + theme)
+  async function handleSavePrefs() {
+    if (!user) return;
+    setError(null);
+    setSavingPrefs(true);
+
+    try {
+      await updateDoc(doc(db, "users", user.uid), {
+        emailNotifications,
+        lowStockAlerts,
+        theme,
       });
-    } catch (err) {
-      console.error("Error updating profile:", err);
+
+      if (typeof window !== "undefined") {
+        document.documentElement.classList.toggle("dark", theme === "dark");
+        window.localStorage.setItem("sp-theme", theme);
+      }
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Failed to save preferences.");
+    } finally {
+      setSavingPrefs(false);
+    }
+  }
+
+  // CHANGE PASSWORD
+  async function handleChangePassword(e: React.FormEvent) {
+    e.preventDefault();
+    if (!user || !currentPassword || !newPassword) return;
+
+    setError(null);
+    setPasswordMsg(null);
+
+    try {
+      const cred = EmailAuthProvider.credential(
+        user.email!,
+        currentPassword
+      );
+      await reauthenticateWithCredential(user, cred);
+      await updatePassword(user, newPassword);
+
+      setPasswordMsg("Password updated successfully.");
+      setCurrentPassword("");
+      setNewPassword("");
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Failed to change password.");
+    }
+  }
+
+  // DELETE ACCOUNT
+  async function handleDeleteAccount(e: React.FormEvent) {
+    e.preventDefault();
+    if (!user) return;
+    setError(null);
+
+    if (deleteConfirmText !== "DELETE") {
+      setError('Type "DELETE" in the confirmation box to delete your account.');
+      return;
     }
 
-    setSaving(false);
+    try {
+      const cred = EmailAuthProvider.credential(
+        user.email!,
+        deletePassword
+      );
+      await reauthenticateWithCredential(user, cred);
+
+      // Delete Firestore user doc first
+      await deleteDoc(doc(db, "users", user.uid));
+
+      // Then delete auth user
+      await deleteUser(user);
+
+      router.push("/");
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Failed to delete account.");
+    }
+  }
+
+  if (loadingUser) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-100">
+        <div className="text-slate-500">Loading settings…</div>
+      </div>
+    );
   }
 
   return (
-    <motion.main
-      className="flex-1 p-10"
+    <motion.div
+      className="min-h-screen flex bg-slate-100"
       initial={{ opacity: 0.4 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 0.2 }}
+      transition={{ duration: 0.25 }}
     >
-      <motion.h1
-        className="text-3xl font-bold"
-        initial={{ opacity: 0, y: -15 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        Settings
-      </motion.h1>
+      {/* Sidebar + logout come from app/dashboard/layout.tsx */}
 
-      <p className="text-slate-600 mt-2">Manage your account & preferences.</p>
-
-      {/* ============================ */}
-      {/* ACCOUNT SETTINGS */}
-      {/* ============================ */}
-      <motion.div
-        className="mt-10 bg-white p-6 rounded-xl shadow max-w-xl"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        <h2 className="text-xl font-semibold mb-4">Account Settings</h2>
-
-        <label className="block text-sm text-slate-600 mt-3">
-          Display Name
-        </label>
-        <input
-          value={displayName}
-          onChange={(e) => setDisplayName(e.target.value)}
-          className="w-full p-3 border rounded-lg mt-1"
-          placeholder="Your name"
-        />
-
-        <button
-          onClick={handleSaveProfile}
-          disabled={saving}
-          className="mt-4 bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-lg"
+      <main className="flex-1 p-10">
+        <motion.h1
+          className="text-3xl font-bold"
+          initial={{ opacity: 0, y: -15 }}
+          animate={{ opacity: 1, y: 0 }}
         >
-          {saving ? "Saving..." : "Save Changes"}
-        </button>
+          Settings
+        </motion.h1>
 
-        <div className="mt-6 text-sm text-slate-500">
-          <p>
-            Want to change your password?  
-            <a
-              href="https://myaccount.google.com/security"
-              className="text-sky-600 hover:underline ml-1"
-              target="_blank"
-            >
-              Manage through your Google account
-            </a>
-          </p>
-        </div>
-      </motion.div>
-
-      {/* ============================ */}
-      {/* APP SETTINGS */}
-      {/* ============================ */}
-      <motion.div
-        className="mt-10 bg-white p-6 rounded-xl shadow max-w-xl"
-        initial={{ opacity: 0, y: 25 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-      >
-        <h2 className="text-xl font-semibold mb-4">App Preferences</h2>
-
-        {/* LIGHT/DARK THEME SWITCH */}
-        <label className="flex items-center justify-between cursor-pointer">
-          <span className="text-sm text-slate-600">Dark Mode</span>
-
-          <div
-            className={`w-12 h-6 flex items-center rounded-full p-1 transition ${
-              theme === "dark" ? "bg-sky-600" : "bg-slate-300"
-            }`}
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          >
-            <div
-              className={`bg-white w-5 h-5 rounded-full shadow-md transform transition ${
-                theme === "dark" ? "translate-x-6" : ""
-              }`}
-            ></div>
+        {error && (
+          <div className="mt-4 rounded-md bg-red-50 text-red-700 text-sm px-3 py-2">
+            {error}
           </div>
-        </label>
+        )}
 
-        {/* Notifications Placeholder */}
-        <label className="flex items-center justify-between cursor-pointer mt-6">
-          <span className="text-sm text-slate-600">Email Notifications</span>
+        {/* PROFILE SECTION */}
+        <section className="mt-8 bg-white p-6 rounded-xl shadow max-w-2xl">
+          <h2 className="text-xl font-semibold">Profile</h2>
+          <p className="text-slate-500 text-sm mt-1">
+            Update your basic account information.
+          </p>
 
-          <span className="text-slate-400 text-xs">
-            (Coming Soon)
-          </span>
-        </label>
-      </motion.div>
-    </motion.main>
+          <form
+            onSubmit={handleSaveProfile}
+            className="mt-4 space-y-4"
+          >
+            <div>
+              <label className="text-sm text-slate-700">Full name</label>
+              <input
+                type="text"
+                className="mt-1 w-full rounded-lg border p-3 text-sm"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Your name"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm text-slate-700">Email</label>
+              <input
+                type="email"
+                className="mt-1 w-full rounded-lg border p-3 text-sm bg-slate-50"
+                value={user?.email || ""}
+                readOnly
+              />
+              <p className="text-xs text-slate-400 mt-1">
+                Email changes must be done from your account owner.
+              </p>
+            </div>
+
+            <button
+              type="submit"
+              disabled={savingProfile}
+              className="inline-flex items-center px-4 py-2 rounded-lg bg-sky-600 text-white text-sm font-medium hover:opacity-95 disabled:opacity-60"
+            >
+              {savingProfile ? "Saving…" : "Save profile"}
+            </button>
+          </form>
+        </section>
+
+        {/* PREFERENCES SECTION */}
+        <section className="mt-8 bg-white p-6 rounded-xl shadow max-w-2xl">
+          <h2 className="text-xl font-semibold">Preferences</h2>
+          <p className="text-slate-500 text-sm mt-1">
+            Notifications and appearance.
+          </p>
+
+          <div className="mt-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-medium text-sm">
+                  Email notifications
+                </div>
+                <div className="text-xs text-slate-500">
+                  Receive email alerts about supplies.
+                </div>
+              </div>
+              <input
+                type="checkbox"
+                className="h-4 w-4"
+                checked={emailNotifications}
+                onChange={(e) => setEmailNotifications(e.target.checked)}
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-medium text-sm">
+                  Low stock alerts
+                </div>
+                <div className="text-xs text-slate-500">
+                  Extra alerts when an item is about to run out.
+                </div>
+              </div>
+              <input
+                type="checkbox"
+                className="h-4 w-4"
+                checked={lowStockAlerts}
+                onChange={(e) => setLowStockAlerts(e.target.checked)}
+              />
+            </div>
+
+            <div className="flex items-center justify-between pt-2">
+              <div>
+                <div className="font-medium text-sm">
+                  Theme
+                </div>
+                <div className="text-xs text-slate-500">
+                  Switch between light and dark mode.
+                </div>
+              </div>
+              <div className="inline-flex rounded-full border overflow-hidden text-xs">
+                <button
+                  type="button"
+                  className={`px-3 py-1 ${
+                    theme === "light"
+                      ? "bg-sky-600 text-white"
+                      : "bg-white text-slate-600"
+                  }`}
+                  onClick={() => setTheme("light")}
+                >
+                  Light
+                </button>
+                <button
+                  type="button"
+                  className={`px-3 py-1 ${
+                    theme === "dark"
+                      ? "bg-sky-600 text-white"
+                      : "bg-white text-slate-600"
+                  }`}
+                  onClick={() => setTheme("dark")}
+                >
+                  Dark
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              disabled={savingPrefs}
+              onClick={handleSavePrefs}
+              className="mt-2 inline-flex items-center px-4 py-2 rounded-lg bg-sky-600 text-white text-sm font-medium hover:opacity-95 disabled:opacity-60"
+            >
+              {savingPrefs ? "Saving…" : "Save preferences"}
+            </button>
+          </div>
+        </section>
+
+        {/* SECURITY SECTION */}
+        <section className="mt-8 bg-white p-6 rounded-xl shadow max-w-2xl">
+          <h2 className="text-xl font-semibold">Security</h2>
+          <p className="text-slate-500 text-sm mt-1">
+            Change your password or delete your account.
+          </p>
+
+          {/* Change password */}
+          <form
+            onSubmit={handleChangePassword}
+            className="mt-4 space-y-3 border-b pb-5"
+          >
+            <div className="font-medium text-sm">Change password</div>
+
+            <input
+              type="password"
+              className="w-full mt-1 rounded-lg border p-3 text-sm"
+              placeholder="Current password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+            />
+
+            <input
+              type="password"
+              className="w-full mt-1 rounded-lg border p-3 text-sm"
+              placeholder="New password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+            />
+
+            <button
+              type="submit"
+              className="inline-flex items-center px-4 py-2 rounded-lg bg-slate-800 text-white text-sm font-medium hover:opacity-95"
+            >
+              Update password
+            </button>
+
+            {passwordMsg && (
+              <div className="text-xs text-emerald-600 mt-1">
+                {passwordMsg}
+              </div>
+            )}
+          </form>
+
+          {/* Delete account */}
+          <form
+            onSubmit={handleDeleteAccount}
+            className="mt-5 space-y-3"
+          >
+            <div className="font-medium text-sm text-red-600">
+              Delete account
+            </div>
+            <p className="text-xs text-slate-500">
+              This will permanently delete your StockPilot account and data.
+              This cannot be undone.
+            </p>
+
+            <input
+              type="password"
+              className="w-full mt-1 rounded-lg border p-3 text-sm"
+              placeholder="Current password (for confirmation)"
+              value={deletePassword}
+              onChange={(e) => setDeletePassword(e.target.value)}
+            />
+
+            <input
+              type="text"
+              className="w-full mt-1 rounded-lg border p-3 text-sm"
+              placeholder='Type "DELETE" to confirm'
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+            />
+
+            <button
+              type="submit"
+              className="inline-flex items-center px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700"
+            >
+              Permanently delete account
+            </button>
+          </form>
+        </section>
+      </main>
+    </motion.div>
   );
 }

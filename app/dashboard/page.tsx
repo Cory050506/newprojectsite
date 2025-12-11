@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { auth, db } from "../../lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { collection, onSnapshot } from "firebase/firestore";
+import { collection, onSnapshot, doc, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 
 import { motion } from "framer-motion";
@@ -21,6 +21,7 @@ import {
 export default function DashboardHome() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
   const [items, setItems] = useState<any[]>([]);
   const [stats, setStats] = useState({
     totalItems: 0,
@@ -30,10 +31,18 @@ export default function DashboardHome() {
 
   // AUTH CHECK
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => {
-      if (!u) router.push("/login");
-      else setUser(u);
+    const unsub = onAuthStateChanged(auth, async (u) => {
+      if (!u) {
+        router.push("/login");
+        return;
+      }
+      setUser(u);
+
+      // Fetch user profile
+      const snap = await getDoc(doc(db, "users", u.uid));
+      if (snap.exists()) setProfile(snap.data());
     });
+
     return () => unsub();
   }, [router]);
 
@@ -57,7 +66,7 @@ export default function DashboardHome() {
     return () => unsubItems();
   }, [user]);
 
-  // STATS
+  // STAT CALC
   function calculateStats(items: any[]) {
     const today = new Date();
     let runningLow = 0;
@@ -70,9 +79,7 @@ export default function DashboardHome() {
       const emptyDate = new Date(created);
       emptyDate.setDate(emptyDate.getDate() + item.daysLast);
 
-      const diffDays = Math.ceil(
-        (emptyDate.getTime() - today.getTime()) / 86400000
-      );
+      const diffDays = Math.ceil((emptyDate.getTime() - today.getTime()) / 86400000);
 
       if (diffDays <= 3) runningLow++;
       if (diffDays === 0) dueToday++;
@@ -99,6 +106,9 @@ export default function DashboardHome() {
     })
     .filter(Boolean);
 
+  const displayName =
+    profile?.name || user?.displayName || user?.email || "there";
+
   return (
     <motion.main
       className="flex-1 p-10"
@@ -119,7 +129,7 @@ export default function DashboardHome() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
       >
-        Welcome back, {user?.email}! Here's your supply overview:
+        Welcome back, {displayName}! Here's your supply overview:
       </motion.p>
 
       {/* STATS */}
