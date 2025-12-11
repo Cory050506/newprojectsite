@@ -13,7 +13,6 @@ import {
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/navigation";
-
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function ItemsPage() {
@@ -39,7 +38,10 @@ export default function ItemsPage() {
     let unsubItems: any;
 
     const unsubAuth = onAuthStateChanged(auth, (currentUser) => {
-      if (!currentUser) return router.push("/login");
+      if (!currentUser) {
+        router.push("/login");
+        return;
+      }
 
       setUser(currentUser);
 
@@ -60,10 +62,44 @@ export default function ItemsPage() {
       unsubAuth();
       unsubItems?.();
     };
-  }, []);
+  }, [router]);
+
+  // STATUS BADGE
+  function getStatus(item: any) {
+    if (!item.createdAt) return null;
+
+    const created = item.createdAt.toDate();
+    const now = new Date();
+    const diff = Math.floor((now.getTime() - created.getTime()) / 86400000);
+
+    const daysLeft = item.daysLast - diff;
+
+    if (daysLeft <= 0)
+      return {
+        label: "Due Today",
+        color:
+          "bg-red-200 dark:bg-red-900 text-red-800 dark:text-red-200",
+        daysLeft: 0,
+      };
+
+    if (daysLeft <= 3)
+      return {
+        label: "Running Low",
+        color:
+          "bg-amber-200 dark:bg-amber-900 text-amber-800 dark:text-amber-200",
+        daysLeft,
+      };
+
+    return {
+      label: "OK",
+      color:
+        "bg-green-200 dark:bg-green-900 text-green-800 dark:text-green-200",
+      daysLeft,
+    };
+  }
 
   // ADD ITEM
-  async function handleAddItem(e: any) {
+  async function handleAddItem(e: React.FormEvent) {
     e.preventDefault();
     if (!user) return;
 
@@ -81,7 +117,7 @@ export default function ItemsPage() {
   }
 
   // EDIT ITEM
-  async function handleEditSubmit(e: any) {
+  async function handleEditSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!user || !editItem) return;
 
@@ -97,33 +133,21 @@ export default function ItemsPage() {
 
   // DELETE ITEM
   async function handleDeleteItem(id: string) {
+    if (!user) return;
     await deleteDoc(doc(db, "users", user.uid, "items", id));
   }
 
   // REFILL
   async function handleRefillItem(id: string) {
+    if (!user) return;
     await updateDoc(doc(db, "users", user.uid, "items", id), {
       createdAt: serverTimestamp(),
     });
   }
 
-  // STATUS BADGE
-  function getStatus(item: any) {
-    if (!item.createdAt) return null;
-
-    const created = item.createdAt.toDate();
-    const now = new Date();
-    const diff = Math.floor((now.getTime() - created.getTime()) / 86400000);
-
-    const daysLeft = item.daysLast - diff;
-
-    if (daysLeft <= 0) return { label: "Due Today", color: "bg-red-100 text-red-700", daysLeft: 0 };
-    if (daysLeft <= 3) return { label: "Running Low", color: "bg-amber-100 text-amber-700", daysLeft };
-    return { label: "OK", color: "bg-green-100 text-green-700", daysLeft };
-  }
-
   return (
-    <motion.div className="p-10 flex-1"
+    <motion.div
+      className="p-10 flex-1 text-slate-800 dark:text-slate-100"
       initial={{ opacity: 0.4 }}
       animate={{ opacity: 1 }}
     >
@@ -131,7 +155,7 @@ export default function ItemsPage() {
 
       {/* ITEMS PANEL */}
       <motion.div
-        className="mt-8 bg-white p-6 rounded-xl shadow"
+        className="mt-8 bg-white dark:bg-slate-800 p-6 rounded-xl shadow"
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
       >
@@ -159,18 +183,20 @@ export default function ItemsPage() {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="p-4 border rounded-lg flex justify-between items-center hover:bg-slate-100 transition"
+                className="p-4 border dark:border-slate-600 rounded-lg flex justify-between items-center bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 transition"
               >
                 <div>
                   <h3 className="font-semibold">{item.name}</h3>
 
                   {status && (
-                    <span className={`mt-1 inline-block px-2 py-1 text-xs rounded ${status.color}`}>
+                    <span
+                      className={`mt-1 inline-block px-2 py-1 text-xs rounded ${status.color}`}
+                    >
                       {status.label} • {status.daysLeft} days left
                     </span>
                   )}
 
-                  <p className="text-slate-500 text-sm mt-2">
+                  <p className="text-slate-500 dark:text-slate-300 text-sm mt-2">
                     From: {item.vendor} <br />
                     Last refilled:{" "}
                     {item.createdAt
@@ -219,9 +245,7 @@ export default function ItemsPage() {
         </div>
       </motion.div>
 
-      {/* ============================= */}
       {/* ADD MODAL */}
-      {/* ============================= */}
       <AnimatePresence>
         {showAdd && (
           <motion.div
@@ -231,7 +255,7 @@ export default function ItemsPage() {
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className="bg-white w-full max-w-md rounded-xl p-6 shadow"
+              className="bg-white dark:bg-slate-800 w-full max-w-md rounded-xl p-6 shadow"
               initial={{ scale: 0.85, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.85, opacity: 0 }}
@@ -243,7 +267,7 @@ export default function ItemsPage() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Item Name"
-                  className="w-full border p-3 rounded-lg"
+                  className="w-full border dark:border-slate-600 bg-white dark:bg-slate-900 p-3 rounded-lg"
                 />
 
                 <input
@@ -251,14 +275,14 @@ export default function ItemsPage() {
                   value={daysLast}
                   onChange={(e) => setDaysLast(e.target.value)}
                   placeholder="Days it lasts"
-                  className="w-full border p-3 rounded-lg"
+                  className="w-full border dark:border-slate-600 bg-white dark:bg-slate-900 p-3 rounded-lg"
                 />
 
                 <input
                   value={vendor}
                   onChange={(e) => setVendor(e.target.value)}
                   placeholder="Vendor"
-                  className="w-full border p-3 rounded-lg"
+                  className="w-full border dark:border-slate-600 bg-white dark:bg-slate-900 p-3 rounded-lg"
                 />
 
                 <div className="flex gap-3 pt-2">
@@ -270,7 +294,10 @@ export default function ItemsPage() {
                     Cancel
                   </button>
 
-                  <button type="submit" className="w-1/2 bg-sky-600 text-white p-3 rounded-lg">
+                  <button
+                    type="submit"
+                    className="w-1/2 bg-sky-600 text-white p-3 rounded-lg"
+                  >
                     Save
                   </button>
                 </div>
@@ -280,9 +307,7 @@ export default function ItemsPage() {
         )}
       </AnimatePresence>
 
-      {/* ============================= */}
       {/* EDIT MODAL */}
-      {/* ============================= */}
       <AnimatePresence>
         {showEdit && editItem && (
           <motion.div
@@ -292,7 +317,7 @@ export default function ItemsPage() {
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className="bg-white w-full max-w-md rounded-xl p-6 shadow"
+              className="bg-white dark:bg-slate-800 w-full max-w-md rounded-xl p-6 shadow"
               initial={{ scale: 0.85, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.85, opacity: 0 }}
@@ -305,7 +330,7 @@ export default function ItemsPage() {
                   onChange={(e) =>
                     setEditItem({ ...editItem, name: e.target.value })
                   }
-                  className="w-full border p-3 rounded-lg"
+                  className="w-full border dark:border-slate-600 bg-white dark:bg-slate-900 p-3 rounded-lg"
                 />
 
                 <input
@@ -317,7 +342,7 @@ export default function ItemsPage() {
                       daysLast: Number(e.target.value),
                     })
                   }
-                  className="w-full border p-3 rounded-lg"
+                  className="w-full border dark:border-slate-600 bg-white dark:bg-slate-900 p-3 rounded-lg"
                 />
 
                 <input
@@ -328,7 +353,7 @@ export default function ItemsPage() {
                       vendor: e.target.value,
                     })
                   }
-                  className="w-full border p-3 rounded-lg"
+                  className="w-full border dark:border-slate-600 bg-white dark:bg-slate-900 p-3 rounded-lg"
                 />
 
                 <div className="flex gap-3 pt-2">
@@ -353,9 +378,7 @@ export default function ItemsPage() {
         )}
       </AnimatePresence>
 
-      {/* ============================= */}
       {/* DELETE MODAL */}
-      {/* ============================= */}
       <AnimatePresence>
         {showDelete && deleteItemId && (
           <motion.div
@@ -365,13 +388,15 @@ export default function ItemsPage() {
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className="bg-white w-full max-w-sm rounded-xl p-6 shadow text-center"
+              className="bg-white dark:bg-slate-800 w-full max-w-sm rounded-xl p-6 shadow text-center"
               initial={{ scale: 0.85, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.85, opacity: 0 }}
             >
               <h2 className="text-xl font-semibold">Delete Item?</h2>
-              <p className="text-slate-600 mt-2">This action cannot be undone.</p>
+              <p className="text-slate-600 dark:text-slate-300 mt-2">
+                This action cannot be undone.
+              </p>
 
               <div className="flex gap-3 mt-6">
                 <button

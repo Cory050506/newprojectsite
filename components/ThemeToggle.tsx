@@ -1,42 +1,42 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
 
 export default function ThemeToggle() {
-  const [theme, setTheme] = useState("light");
+  const [dark, setDark] = useState(false);
 
-  // Load saved theme
+  // Load theme from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem("theme");
-    if (saved === "dark") {
-      setTheme("dark");
-      document.documentElement.classList.add("dark");
-    }
+    const isDark = localStorage.getItem("theme") === "dark";
+    setDark(isDark);
+    document.documentElement.classList.toggle("dark", isDark);
   }, []);
 
-  // Apply theme
-  function toggleTheme() {
-    const newTheme = theme === "light" ? "dark" : "light";
+  function toggle() {
+    const newDark = !dark;
+    setDark(newDark);
 
-    setTheme(newTheme);
-    localStorage.setItem("theme", newTheme);
-
-    if (newTheme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
+    document.documentElement.classList.toggle("dark", newDark);
+    localStorage.setItem("theme", newDark ? "dark" : "light");
   }
 
   return (
-    <motion.button
-      onClick={toggleTheme}
-      whileHover={{ scale: 1.1 }}
-      whileTap={{ scale: 0.9 }}
-      className="p-2 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 mt-4"
+    <button
+      onClick={toggle}
+      className="flex items-center gap-2 mt-4 px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700 transition"
     >
-      {theme === "light" ? "🌙 Dark Mode" : "☀️ Light Mode"}
-    </motion.button>
+      <div
+        className={`w-10 h-5 flex items-center rounded-full p-1 transition ${
+          dark ? "bg-sky-600" : "bg-slate-400"
+        }`}
+      >
+        <div
+          className={`bg-white w-4 h-4 rounded-full shadow transform transition ${
+            dark ? "translate-x-5" : ""
+          }`}
+        ></div>
+      </div>
+      <span>{dark ? "Dark Mode" : "Light Mode"}</span>
+    </button>
   );
 }

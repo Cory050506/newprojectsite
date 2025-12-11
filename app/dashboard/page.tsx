@@ -5,7 +5,6 @@ import { auth, db } from "../../lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { collection, onSnapshot, doc, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-
 import { motion } from "framer-motion";
 
 import {
@@ -32,13 +31,10 @@ export default function DashboardHome() {
   // AUTH CHECK
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
-      if (!u) {
-        router.push("/login");
-        return;
-      }
+      if (!u) return router.push("/login");
+
       setUser(u);
 
-      // Fetch user profile
       const snap = await getDoc(doc(db, "users", u.uid));
       if (snap.exists()) setProfile(snap.data());
     });
@@ -66,7 +62,7 @@ export default function DashboardHome() {
     return () => unsubItems();
   }, [user]);
 
-  // STAT CALC
+  // CALCULATE STATS
   function calculateStats(items: any[]) {
     const today = new Date();
     let runningLow = 0;
@@ -85,11 +81,7 @@ export default function DashboardHome() {
       if (diffDays === 0) dueToday++;
     });
 
-    setStats({
-      totalItems: items.length,
-      runningLow,
-      dueToday,
-    });
+    setStats({ totalItems: items.length, runningLow, dueToday });
   }
 
   // GRAPH DATA
@@ -111,64 +103,93 @@ export default function DashboardHome() {
 
   return (
     <motion.main
-      className="flex-1 p-10"
+      className="flex-1 p-10 text-slate-800 dark:text-slate-100"
       initial={{ opacity: 0.4 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 0.2 }}
     >
-      <motion.h1
-        className="text-3xl font-bold"
-        initial={{ opacity: 0, y: -15 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        Dashboard
-      </motion.h1>
+      {/* TITLE */}
+      <h1 className="text-3xl font-bold">Dashboard</h1>
 
-      <motion.p
-        className="text-slate-600 mt-2"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-      >
+      <p className="text-slate-600 dark:text-slate-300 mt-2">
         Welcome back, {displayName}! Here's your supply overview:
-      </motion.p>
+      </p>
 
-      {/* STATS */}
+      {/* ========================== */}
+      {/*      STATS CARDS           */}
+      {/* ========================== */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10">
-        <motion.div className="p-6 bg-white rounded-xl shadow">
-          <h2 className="text-lg text-slate-600">Total Items</h2>
-          <p className="text-4xl font-bold mt-2">{stats.totalItems}</p>
-        </motion.div>
 
-        <motion.div className="p-6 bg-white rounded-xl shadow">
-          <h2 className="text-lg text-slate-600">Running Low (≤ 3 days)</h2>
-          <p className="text-4xl font-bold mt-2 text-amber-600">
+        <div className="p-6 bg-white dark:bg-slate-800 rounded-xl shadow border border-slate-200 dark:border-slate-700">
+          <h2 className="text-lg text-slate-600 dark:text-slate-300">Total Items</h2>
+          <p className="text-4xl font-bold mt-2">{stats.totalItems}</p>
+        </div>
+
+        <div className="p-6 bg-white dark:bg-slate-800 rounded-xl shadow border border-slate-200 dark:border-slate-700">
+          <h2 className="text-lg text-slate-600 dark:text-slate-300">
+            Running Low (≤ 3 days)
+          </h2>
+          <p className="text-4xl font-bold mt-2 text-amber-500">
             {stats.runningLow}
           </p>
-        </motion.div>
+        </div>
 
-        <motion.div className="p-6 bg-white rounded-xl shadow">
-          <h2 className="text-lg text-slate-600">Due Today</h2>
-          <p className="text-4xl font-bold mt-2 text-red-600">
+        <div className="p-6 bg-white dark:bg-slate-800 rounded-xl shadow border border-slate-200 dark:border-slate-700">
+          <h2 className="text-lg text-slate-600 dark:text-slate-300">Due Today</h2>
+          <p className="text-4xl font-bold mt-2 text-red-500">
             {stats.dueToday}
           </p>
-        </motion.div>
+        </div>
+
       </div>
 
-      {/* GRAPH */}
-      <motion.div
-        className="mt-10 bg-white p-6 rounded-xl shadow"
-        initial={{ opacity: 0, y: 25 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
+      {/* ========================== */}
+      {/*        GRAPH CARD          */}
+      {/* ========================== */}
+      <div className="mt-10 bg-white dark:bg-slate-800 p-6 rounded-xl shadow border border-slate-200 dark:border-slate-700">
         <h2 className="text-xl font-semibold mb-4">Days Left Per Item</h2>
 
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={graphData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
+            <LineChart
+              data={graphData}
+              style={{ background: "transparent" }}
+            >
+              {/* Grid */}
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke={document.documentElement.classList.contains("dark") ? "#FFFFFF22" : "#00000022"}
+              />
+
+              {/* Axes */}
+              <XAxis
+                dataKey="name"
+                stroke="currentColor"
+                tick={{ fill: "currentColor" }}
+              />
+              <YAxis
+                stroke="currentColor"
+                tick={{ fill: "currentColor" }}
+              />
+
+              {/* Tooltip — auto dark mode */}
+              <Tooltip
+                contentStyle={{
+                  background:
+                    document.documentElement.classList.contains("dark")
+                      ? "#1e293b" // slate-800
+                      : "#ffffff",
+                  border:
+                    document.documentElement.classList.contains("dark")
+                      ? "1px solid #334155"
+                      : "1px solid #e5e7eb",
+                  borderRadius: "8px",
+                  color: document.documentElement.classList.contains("dark")
+                    ? "#f1f5f9"
+                    : "#1e293b",
+                }}
+              />
+
+              {/* Line */}
               <Line
                 type="monotone"
                 dataKey="daysLeft"
@@ -179,7 +200,7 @@ export default function DashboardHome() {
             </LineChart>
           </ResponsiveContainer>
         </div>
-      </motion.div>
+      </div>
     </motion.main>
   );
 }
