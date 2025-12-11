@@ -20,6 +20,12 @@ export default function Dashboard() {
   const [daysLast, setDaysLast] = useState("");
   const [vendor, setVendor] = useState("");
 
+  // Edit modal
+const [showEditModal, setShowEditModal] = useState(false);
+const [editItem, setEditItem] = useState<any>(null);
+
+
+
   // Check auth + fetch items
 useEffect(() => {
   let unsubscribeItems: any = null;
@@ -79,22 +85,23 @@ async function handleDeleteItem(itemId: string) {
   await deleteDoc(doc(db, "users", user.uid, "items", itemId));
 }
 
-async function handleEditItem(item: any) {
-  const newName = prompt("Edit name:", item.name);
-  const newDays = prompt("Edit days last:", item.daysLast);
-  const newVendor = prompt("Edit vendor:", item.vendor);
-
-  if (!newName || !newDays || !newVendor) return;
+async function handleEditSubmit(e: any) {
+  e.preventDefault();
+  if (!user || !editItem) return;
 
   await updateDoc(
-    doc(db, "users", user.uid, "items", item.id),
+    doc(db, "users", user.uid, "items", editItem.id),
     {
-      name: newName,
-      daysLast: Number(newDays),
-      vendor: newVendor,
+      name: editItem.name,
+      daysLast: Number(editItem.daysLast),
+      vendor: editItem.vendor,
     }
   );
+
+  setShowEditModal(false);
+  setEditItem(null);
 }
+
 
 
   return (
@@ -143,12 +150,15 @@ async function handleEditItem(item: any) {
   </div>
 
   <div className="flex gap-2">
-    <button
-      onClick={() => handleEditItem(item)}
-      className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-md cursor-pointer"
-    >
-      Edit
-    </button>
+   <button
+  onClick={() => {
+    setEditItem(item);
+    setShowEditModal(true);
+  }}
+  className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-md cursor-pointer"
+>
+  Edit
+</button>
 
     <button
       onClick={() => handleDeleteItem(item.id)}
@@ -230,4 +240,75 @@ async function handleEditItem(item: any) {
       )}
     </div>
   );
+{/* ======================== */}
+{/* EDIT ITEM MODAL */}
+{/* ======================== */}
+{showEditModal && editItem && (
+  <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4">
+    <div className="bg-white w-full max-w-md rounded-xl shadow-lg p-6">
+
+      <h2 className="text-xl font-semibold">Edit Item</h2>
+
+      <form onSubmit={handleEditSubmit} className="mt-4 space-y-4">
+        
+        <div>
+          <label className="text-sm text-slate-600">Item name</label>
+          <input
+            value={editItem.name}
+            onChange={(e) =>
+              setEditItem({ ...editItem, name: e.target.value })
+            }
+            className="w-full p-3 mt-1 border rounded-lg"
+          />
+        </div>
+
+        <div>
+          <label className="text-sm text-slate-600">Days it lasts</label>
+          <input
+            type="number"
+            value={editItem.daysLast}
+            onChange={(e) =>
+              setEditItem({ ...editItem, daysLast: e.target.value })
+            }
+            className="w-full p-3 mt-1 border rounded-lg"
+          />
+        </div>
+
+        <div>
+          <label className="text-sm text-slate-600">Vendor</label>
+          <input
+            value={editItem.vendor}
+            onChange={(e) =>
+              setEditItem({ ...editItem, vendor: e.target.value })
+            }
+            className="w-full p-3 mt-1 border rounded-lg"
+          />
+        </div>
+
+        <div className="flex gap-3 pt-2">
+          <button
+            type="button"
+            onClick={() => {
+              setShowEditModal(false);
+              setEditItem(null);
+            }}
+            className="w-1/2 p-3 rounded-lg border"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            className="w-1/2 bg-blue-600 text-white p-3 rounded-lg"
+          >
+            Save Changes
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+)}
+
+
 }
