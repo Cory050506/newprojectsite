@@ -19,6 +19,7 @@ import {
 
 export default function DashboardHome() {
   const router = useRouter();
+
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [items, setItems] = useState<any[]>([]);
@@ -27,6 +28,22 @@ export default function DashboardHome() {
     runningLow: 0,
     dueToday: 0,
   });
+
+  // 🌙 Dark mode detection (CLIENT ONLY)
+  const [isDark, setIsDark] = useState(false);
+  useEffect(() => {
+    // this ONLY runs in browser → safe
+    const html = document.documentElement;
+    setIsDark(html.classList.contains("dark"));
+
+    // also listen for theme changes
+    const observer = new MutationObserver(() => {
+      setIsDark(html.classList.contains("dark"));
+    });
+
+    observer.observe(html, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
 
   // AUTH CHECK
   useEffect(() => {
@@ -107,7 +124,6 @@ export default function DashboardHome() {
       initial={{ opacity: 0.4 }}
       animate={{ opacity: 1 }}
     >
-      {/* TITLE */}
       <h1 className="text-3xl font-bold">Dashboard</h1>
 
       <p className="text-slate-600 dark:text-slate-300 mt-2">
@@ -115,7 +131,7 @@ export default function DashboardHome() {
       </p>
 
       {/* ========================== */}
-      {/*      STATS CARDS           */}
+      {/*        STATS CARDS        */}
       {/* ========================== */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10">
 
@@ -139,28 +155,22 @@ export default function DashboardHome() {
             {stats.dueToday}
           </p>
         </div>
-
       </div>
 
       {/* ========================== */}
-      {/*        GRAPH CARD          */}
+      {/*        GRAPH CARD         */}
       {/* ========================== */}
       <div className="mt-10 bg-white dark:bg-slate-800 p-6 rounded-xl shadow border border-slate-200 dark:border-slate-700">
         <h2 className="text-xl font-semibold mb-4">Days Left Per Item</h2>
 
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart
-              data={graphData}
-              style={{ background: "transparent" }}
-            >
-              {/* Grid */}
+            <LineChart data={graphData} style={{ background: "transparent" }}>
               <CartesianGrid
                 strokeDasharray="3 3"
-                stroke={document.documentElement.classList.contains("dark") ? "#FFFFFF22" : "#00000022"}
+                stroke={isDark ? "#ffffff22" : "#00000022"}
               />
 
-              {/* Axes */}
               <XAxis
                 dataKey="name"
                 stroke="currentColor"
@@ -171,25 +181,15 @@ export default function DashboardHome() {
                 tick={{ fill: "currentColor" }}
               />
 
-              {/* Tooltip — auto dark mode */}
               <Tooltip
                 contentStyle={{
-                  background:
-                    document.documentElement.classList.contains("dark")
-                      ? "#1e293b" // slate-800
-                      : "#ffffff",
-                  border:
-                    document.documentElement.classList.contains("dark")
-                      ? "1px solid #334155"
-                      : "1px solid #e5e7eb",
+                  background: isDark ? "#1e293b" : "#ffffff",
+                  border: isDark ? "1px solid #334155" : "1px solid #e5e7eb",
                   borderRadius: "8px",
-                  color: document.documentElement.classList.contains("dark")
-                    ? "#f1f5f9"
-                    : "#1e293b",
+                  color: isDark ? "#f1f5f9" : "#1e293b",
                 }}
               />
 
-              {/* Line */}
               <Line
                 type="monotone"
                 dataKey="daysLeft"
