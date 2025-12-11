@@ -38,7 +38,7 @@ export default function Home() {
             <div>
               <div className="font-semibold">StockPilot</div>
               <div className="text-xs text-slate-500 -mt-1">
-                Smart restock reminders
+                Your office, always stocked.
               </div>
             </div>
           </a>
