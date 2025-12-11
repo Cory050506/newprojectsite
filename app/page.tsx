@@ -1,19 +1,45 @@
-/// <reference types="react" />
+"use client";
+
+import { motion } from "framer-motion";
 import Image from "next/image";
+import { useEffect } from "react";
+
+// Simple scroll reveal wrapper
+const Reveal = ({ children, delay = 0 }: any) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true, margin: "-100px" }}
+    transition={{ duration: 0.5, delay }}
+  >
+    {children}
+  </motion.div>
+);
 
 export default function Home() {
   return (
     <main className="antialiased text-slate-800 bg-white">
+
       {/* NAV */}
-      <header className="border-b py-4">
+      <motion.header
+        className="border-b py-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.6 }}
+      >
         <div className="mx-auto max-w-7xl px-6 flex items-center justify-between">
           <a className="flex items-center gap-3" href="#">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-sky-500 to-blue-700 flex items-center justify-center text-white font-semibold">
+            <motion.div
+              className="w-10 h-10 rounded-full bg-gradient-to-br from-sky-500 to-blue-700 flex items-center justify-center text-white font-semibold"
+              whileHover={{ rotate: 5, scale: 1.05 }}
+            >
               SP
-            </div>
+            </motion.div>
             <div>
               <div className="font-semibold">StockPilot</div>
-              <div className="text-xs text-slate-500 -mt-1">Smart restock reminders</div>
+              <div className="text-xs text-slate-500 -mt-1">
+                Smart restock reminders
+              </div>
             </div>
           </a>
 
@@ -29,18 +55,19 @@ export default function Home() {
               Get Started
             </a>
           </nav>
-
-          <div className="md:hidden">
-            <button aria-label="menu" className="p-2 text-2xl">☰</button>
-          </div>
         </div>
-      </header>
+      </motion.header>
 
       {/* HERO */}
       <section className="mx-auto max-w-7xl px-6 py-12">
         <div className="grid md:grid-cols-2 gap-10 items-center">
+
           {/* Text */}
-          <div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7 }}
+          >
             <h1 className="text-4xl md:text-5xl font-extrabold leading-tight">
               Never run out of supplies again.
             </h1>
@@ -50,12 +77,21 @@ export default function Home() {
             </p>
 
             <div className="mt-6 flex gap-3">
-              <a href="/signup" className="bg-sky-600 text-white px-5 py-3 rounded-lg shadow hover:opacity-95">
+              <motion.a
+                href="/signup"
+                whileHover={{ scale: 1.05 }}
+                className="bg-sky-600 text-white px-5 py-3 rounded-lg shadow"
+              >
                 Get Started
-              </a>
-              <a href="#pricing" className="px-5 py-3 rounded-lg border border-slate-200">
+              </motion.a>
+
+              <motion.a
+                href="#pricing"
+                whileHover={{ scale: 1.05 }}
+                className="px-5 py-3 rounded-lg border border-slate-200"
+              >
                 Pricing
-              </a>
+              </motion.a>
             </div>
 
             <ul className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-slate-600">
@@ -64,163 +100,153 @@ export default function Home() {
               <li>✅ Smart prediction system</li>
               <li>✅ CSV export & analytics</li>
             </ul>
-          </div>
+          </motion.div>
 
           {/* Dashboard mockup */}
-    <div className="bg-white rounded-xl shadow-lg p-4 w-full max-w-md">
-  <div className="flex items-center justify-between">
-    <div>
-      <div className="text-sm text-slate-500">Warehouse</div>
-      <div className="font-semibold">Office Supplies</div>
-    </div>
-    <div className="text-xs text-slate-400">Updated 2h ago</div>
-  </div>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            whileHover={{ scale: 1.02 }}
+            className="bg-white rounded-xl shadow-lg p-4 w-full max-w-md"
+          >
+            <DashboardMockup />
+          </motion.div>
 
-  {/* Item 1 */}
-  <div className="mt-4">
-    <div className="flex items-center justify-between text-sm text-slate-600">
-      <div>Paper Towels</div>
-      <div className="font-medium text-slate-800">Low — 2 days</div>
-    </div>
-    <div className="mt-2 h-2 bg-slate-100 rounded-full overflow-hidden">
-      <div className="h-2 bg-amber-400 w-[20%]"></div>
-    </div>
-  </div>
-
-  {/* Item 2 */}
-  <div className="mt-4">
-    <div className="flex items-center justify-between text-sm text-slate-600">
-      <div>Printer Toner</div>
-      <div className="font-medium text-slate-800">OK — 21 days</div>
-    </div>
-    <div className="mt-2 h-2 bg-slate-100 rounded-full overflow-hidden">
-      <div className="h-2 bg-green-400 w-[60%]"></div>
-    </div>
-  </div>
-
-  {/* Item 3 */}
-  <div className="mt-4">
-    <div className="flex items-center justify-between text-sm text-slate-600">
-      <div>Hand Soap</div>
-      <div className="font-medium text-slate-800">Due — today</div>
-    </div>
-    <div className="mt-2 h-2 bg-slate-100 rounded-full overflow-hidden">
-      <div className="h-2 bg-red-400 w-[10%]"></div>
-    </div>
-  </div>
-
-  <div className="mt-4 flex justify-between items-center text-sm">
-    <div className="text-slate-500">Next: Paper Towels</div>
-    <button className="bg-sky-600 text-white px-3 py-1 rounded">Reorder</button>
-  </div>
-</div>
         </div>
-
 
         {/* HOW IT WORKS */}
         <section id="how" className="mt-16">
-          <h2 className="text-2xl font-semibold">How it works</h2>
+          <Reveal>
+            <h2 className="text-2xl font-semibold">How it works</h2>
+          </Reveal>
+
           <div className="mt-6 grid md:grid-cols-3 gap-6">
-            <Step num="1" title="Add items" desc="Add the supplies your business uses regularly." />
-            <Step num="2" title="Set cadence" desc="Tell StockPilot how long each item lasts, or let it learn." />
-            <Step num="3" title="Get reminded" desc="Receive automatic reminders before anything runs out." />
+            <Reveal delay={0.1}><Step num="1" title="Add items" desc="Add the supplies your business uses regularly." /></Reveal>
+            <Reveal delay={0.2}><Step num="2" title="Set cadence" desc="Tell StockPilot how long each item lasts, or let it learn." /></Reveal>
+            <Reveal delay={0.3}><Step num="3" title="Get reminded" desc="Receive automatic reminders before anything runs out." /></Reveal>
           </div>
         </section>
 
-        {/* FEATURES */}
+        {/* FEATURES SECTION */}
         <section id="features" className="mt-16">
-          <h2 className="text-2xl font-semibold">Features</h2>
-          <p className="mt-2 text-slate-600">Built for teams who want simplicity and reliability.</p>
+          <Reveal>
+            <h2 className="text-2xl font-semibold">Features</h2>
+            <p className="mt-2 text-slate-600">Built for teams who want simplicity and reliability.</p>
+          </Reveal>
 
           <div className="mt-6 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            <Feature title="Automatic Restock Alerts" desc="Daily checks and reminders before an item runs out." />
-            <Feature title="Smart Predictions" desc="Usage-based predictions for reorder timing." />
-            <Feature title="Team Access" desc="Invite staff and collaborate across your organization." />
-            <Feature title="Supplier Tracking" desc="Keep supplier info next to every item." />
-            <Feature title="Multi-location" desc="Manage multiple business locations easily." />
-            <Feature title="Reports & Export" desc="CSV exports and light analytics." />
+            {[
+              ["Automatic Restock Alerts", "Daily checks and reminders before an item runs out."],
+              ["Smart Predictions", "Usage-based predictions for reorder timing."],
+              ["Team Access", "Invite staff and collaborate across your organization."],
+              ["Supplier Tracking", "Keep supplier info next to every item."],
+              ["Multi-location", "Manage multiple business locations easily."],
+              ["Reports & Export", "CSV exports and light analytics."],
+            ].map(([title, desc], i) => (
+              <Reveal key={i} delay={i * 0.1}>
+                <Feature title={title} desc={desc} />
+              </Reveal>
+            ))}
           </div>
         </section>
 
-        {/* BEFORE & AFTER */}
+        {/* BEFORE/AFTER */}
         <section className="mt-16 bg-slate-50 p-8 rounded-lg">
-          <h2 className="text-2xl font-semibold">Before & After</h2>
+          <Reveal><h2 className="text-2xl font-semibold">Before & After</h2></Reveal>
 
           <div className="mt-6 grid md:grid-cols-2 gap-6">
-            <Card title="Before StockPilot" items={["Missed orders & last-minute rush", "Spreadsheets that get out of date", "Lost time tracking suppliers"]} />
-            <Card title="After StockPilot" items={["Automated reminders before items run out", "Centralized cadence data", "Faster reorders and less waste"]} />
+            <Reveal delay={0.1}><Card title="Before StockPilot" items={["Missed orders & last-minute rush", "Spreadsheets that get out of date", "Lost time tracking suppliers"]} /></Reveal>
+            <Reveal delay={0.2}><Card title="After StockPilot" items={["Automated reminders before items run out", "Centralized cadence data", "Faster reorders and less waste"]} /></Reveal>
           </div>
         </section>
 
         {/* PRICING */}
         <section id="pricing" className="mt-16">
-          <h2 className="text-2xl font-semibold">Pricing</h2>
-          <p className="mt-2 text-slate-600">One simple paid plan. No free tiers.</p>
+          <Reveal><h2 className="text-2xl font-semibold">Pricing</h2></Reveal>
 
           <div className="mt-6 grid md:grid-cols-2 gap-6">
-            <PriceCard
-              label="Standard"
-              price="$9/mo"
-              desc="Unlimited items • SMS & Push • Team Access"
-              button={{ label: "Subscribe", href: "/signup", primary: true }}
-            />
-            <PriceCard
-              label="Business"
-              price="Custom"
-              desc="Multi-location • Dedicated support"
-              button={{ label: "Contact Sales", href: "/contact" }}
-            />
+            <Reveal delay={0.1}><PriceCard label="Standard" price="$9/mo" desc="Unlimited items • SMS & Push • Team Access" button={{ label: "Subscribe", href: "/signup", primary: true }} /></Reveal>
+            <Reveal delay={0.2}><PriceCard label="Business" price="Custom" desc="Multi-location • Dedicated support" button={{ label: "Contact Sales", href: "/contact" }} /></Reveal>
           </div>
         </section>
 
         {/* CTA */}
-        <section className="mt-16 text-center py-10 bg-gradient-to-r from-sky-50 to-white rounded-lg">
-          <h3 className="text-2xl font-semibold">Stop guessing when to reorder.</h3>
-          <p className="mt-2 text-slate-600">Let StockPilot watch your supplies so you can focus on running your business.</p>
-          <div className="mt-4">
-            <a href="/signup" className="bg-sky-600 text-white px-6 py-3 rounded-lg">
-              Subscribe Now
-            </a>
-          </div>
-        </section>
+        <Reveal>
+          <section className="mt-16 text-center py-10 bg-gradient-to-r from-sky-50 to-white rounded-lg">
+            <h3 className="text-2xl font-semibold">Stop guessing when to reorder.</h3>
+            <p className="mt-2 text-slate-600">
+              Let StockPilot watch your supplies so you can focus on running your business.
+            </p>
+            <div className="mt-4">
+              <a href="/signup" className="bg-sky-600 text-white px-6 py-3 rounded-lg">
+                Subscribe Now
+              </a>
+            </div>
+          </section>
+        </Reveal>
       </section>
 
       {/* FOOTER */}
-      <footer className="border-t py-8 mt-16">
-        <div className="mx-auto max-w-7xl px-6 grid md:grid-cols-3 gap-6 text-sm text-slate-600">
-          <div>
-            <div className="font-semibold">StockPilot</div>
-            <div className="mt-2">Smart restock reminders for small businesses.</div>
+      <Reveal>
+        <footer className="border-t py-8 mt-16">
+          <div className="mx-auto max-w-7xl px-6 grid md:grid-cols-3 gap-6 text-sm text-slate-600">
+            <div>
+              <div className="font-semibold">StockPilot</div>
+              <div className="mt-2">Smart restock reminders for small businesses.</div>
+            </div>
+            <div>
+              <div className="font-semibold">Product</div>
+              <ul className="mt-2 space-y-2">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#pricing">Pricing</a></li>
+              </ul>
+            </div>
+            <div>
+              <div className="font-semibold">Company</div>
+              <ul className="mt-2 space-y-2">
+                <li><a href="#">About</a></li>
+                <li><a href="/contact">Contact</a></li>
+              </ul>
+            </div>
           </div>
 
-          <div>
-            <div className="font-semibold">Product</div>
-            <ul className="mt-2 space-y-2">
-              <li><a href="#features">Features</a></li>
-              <li><a href="#pricing">Pricing</a></li>
-            </ul>
+          <div className="mx-auto max-w-7xl px-6 mt-8 text-center text-xs text-slate-400">
+            © 2025 StockPilot — Built with care.
           </div>
-
-          <div>
-            <div className="font-semibold">Company</div>
-            <ul className="mt-2 space-y-2">
-              <li><a href="#">About</a></li>
-              <li><a href="/contact">Contact</a></li>
-            </ul>
-          </div>
-        </div>
-
-        <div className="mx-auto max-w-7xl px-6 mt-8 text-center text-xs text-slate-400">
-          © 2025 StockPilot — Built with care.
-        </div>
-      </footer>
+        </footer>
+      </Reveal>
     </main>
   );
 }
 
-/* ------------------------------
-   SMALL COMPONENTS
------------------------------- */
+/* -------------------------------------------------------
+   SUB-COMPONENTS  
+------------------------------------------------------- */
+
+function DashboardMockup() {
+  return (
+    <>
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="text-sm text-slate-500">Warehouse</div>
+          <div className="font-semibold">Office Supplies</div>
+        </div>
+        <div className="text-xs text-slate-400">Updated 2h ago</div>
+      </div>
+
+      {/* Items */}
+      <ItemBar label="Paper Towels" status="Low — 2 days" percent={20} color="bg-amber-400" />
+      <ItemBar label="Printer Toner" status="OK — 21 days" percent={60} color="bg-green-400" />
+      <ItemBar label="Hand Soap" status="Due — today" percent={10} color="bg-red-400" />
+
+      <div className="mt-4 flex justify-between items-center text-sm">
+        <div className="text-slate-500">Next: Paper Towels</div>
+        <button className="bg-sky-600 text-white px-3 py-1 rounded">Reorder</button>
+      </div>
+    </>
+  );
+}
 
 function ItemBar({ label, status, percent, color }: any) {
   return (
@@ -230,8 +256,7 @@ function ItemBar({ label, status, percent, color }: any) {
         <div className="font-medium text-slate-800">{status}</div>
       </div>
       <div className="mt-2 h-2 bg-slate-100 rounded-full overflow-hidden">
-        {/* dynamic width using Tailwind arbitrary value (e.g. w-[20%]) */}
-        <div className={`h-2 ${color} w-[${percent}%]`}></div>
+        <div className={`h-2 ${color}`} style={{ width: `${percent}%` }} />
       </div>
     </div>
   );
@@ -239,7 +264,7 @@ function ItemBar({ label, status, percent, color }: any) {
 
 function Step({ num, title, desc }: any) {
   return (
-    <div className="p-6 rounded-lg border">
+    <div className="p-6 rounded-lg border bg-white shadow-sm">
       <div className="w-12 h-12 rounded-md bg-sky-50 flex items-center justify-center text-sky-600 font-semibold">
         {num}
       </div>
@@ -251,7 +276,7 @@ function Step({ num, title, desc }: any) {
 
 function Feature({ title, desc }: any) {
   return (
-    <div className="p-6 rounded-lg border">
+    <div className="p-6 rounded-lg border bg-white shadow-sm hover:shadow-md transition">
       <div className="font-semibold">{title}</div>
       <p className="mt-2 text-sm text-slate-600">{desc}</p>
     </div>
@@ -260,7 +285,7 @@ function Feature({ title, desc }: any) {
 
 function Card({ title, items }: any) {
   return (
-    <div className="p-6 rounded border bg-white">
+    <div className="p-6 rounded border bg-white shadow-sm">
       <h4 className="font-semibold">{title}</h4>
       <ul className="mt-3 text-sm text-slate-600 space-y-2">
         {items.map((i: string, idx: number) => (
@@ -273,7 +298,10 @@ function Card({ title, items }: any) {
 
 function PriceCard({ label, price, desc, button }: any) {
   return (
-    <div className="p-6 rounded-lg border text-center shadow-lg">
+    <motion.div
+      className="p-6 rounded-lg border text-center shadow-sm bg-white"
+      whileHover={{ scale: 1.03 }}
+    >
       <div className="text-sm text-slate-500">{label}</div>
       <div className="mt-3 text-3xl font-extrabold">{price}</div>
       <div className="mt-2 text-sm text-slate-600">{desc}</div>
@@ -288,6 +316,6 @@ function PriceCard({ label, price, desc, button }: any) {
       >
         {button.label}
       </a>
-    </div>
+    </motion.div>
   );
 }
