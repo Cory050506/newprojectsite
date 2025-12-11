@@ -20,7 +20,7 @@ export default function Dashboard() {
   const [vendor, setVendor] = useState("");
 
   // Check auth + fetch items
- useEffect(() => {
+useEffect(() => {
   let unsubscribeItems: any = null;
 
   const unsubAuth = onAuthStateChanged(auth, (currentUser) => {
@@ -35,7 +35,13 @@ export default function Dashboard() {
     unsubscribeItems = onSnapshot(
       collection(db, "users", currentUser.uid, "items"),
       (snap) => {
-        setItems(snap.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+        console.log("SNAPSHOT ITEMS:", snap.docs.map((d) => d.data())); // Debug
+        setItems(
+          snap.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }))
+        );
       }
     );
   });
@@ -45,6 +51,7 @@ export default function Dashboard() {
     if (unsubscribeItems) unsubscribeItems();
   };
 }, []);
+
 
 
   async function handleAddItem(e: any) {
