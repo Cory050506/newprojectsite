@@ -20,19 +20,15 @@ export default function SettingsPage() {
   const [user, setUser] = useState<any>(null);
   const [loadingUser, setLoadingUser] = useState(true);
 
-  // Preferences
+  // Preferences (theme removed)
   const [name, setName] = useState("");
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [lowStockAlerts, setLowStockAlerts] = useState(true);
 
-  // Theme state
-  const [theme, setTheme] = useState<"light" | "dark">("light");
-
-  // UI
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPrefs, setSavingPrefs] = useState(false);
 
-  // Password change
+  // Password fields
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [passwordMsg, setPasswordMsg] = useState<string | null>(null);
@@ -43,7 +39,7 @@ export default function SettingsPage() {
 
   const [error, setError] = useState<string | null>(null);
 
-  // AUTH
+  // AUTH CHECK
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
       if (!u) return router.push("/login");
@@ -53,7 +49,7 @@ export default function SettingsPage() {
     return () => unsub();
   }, [router]);
 
-  // LOAD USER PROFILE DATA
+  // LOAD USER PROFILE (theme removed)
   useEffect(() => {
     if (!user) return;
 
@@ -65,15 +61,6 @@ export default function SettingsPage() {
       setName(data.name || user.displayName || "");
       setEmailNotifications(data.emailNotifications ?? true);
       setLowStockAlerts(data.lowStockAlerts ?? true);
-
-      const t: "light" | "dark" = data.theme === "dark" ? "dark" : "light";
-      setTheme(t);
-
-      // Apply theme client-side ONLY
-      if (typeof window !== "undefined") {
-        document.documentElement.classList.toggle("dark", t === "dark");
-        localStorage.setItem("sp-theme", t);
-      }
     });
 
     return () => unsub();
@@ -84,8 +71,8 @@ export default function SettingsPage() {
     e.preventDefault();
     if (!user) return;
 
-    setError(null);
     setSavingProfile(true);
+    setError(null);
 
     try {
       if (name.trim()) {
@@ -93,30 +80,26 @@ export default function SettingsPage() {
         await updateDoc(doc(db, "users", user.uid), { name: name.trim() });
       }
     } catch (err: any) {
-      setError(err.message || "Unable to save profile.");
+      setError(err.message || "Failed to save profile.");
     }
 
     setSavingProfile(false);
   }
 
-  // SAVE PREFERENCES
+  // SAVE PREFS (theme removed)
   async function handleSavePrefs() {
     if (!user) return;
-    setError(null);
+
     setSavingPrefs(true);
+    setError(null);
 
     try {
       await updateDoc(doc(db, "users", user.uid), {
         emailNotifications,
         lowStockAlerts,
-        theme,
       });
-
-      // apply visually
-      document.documentElement.classList.toggle("dark", theme === "dark");
-      localStorage.setItem("sp-theme", theme);
     } catch (err: any) {
-      setError(err.message || "Unable to save preferences.");
+      setError(err.message || "Failed to save preferences.");
     }
 
     setSavingPrefs(false);
@@ -127,8 +110,8 @@ export default function SettingsPage() {
     e.preventDefault();
     if (!user) return;
 
-    setError(null);
     setPasswordMsg(null);
+    setError(null);
 
     try {
       const cred = EmailAuthProvider.credential(user.email!, currentPassword);
@@ -148,21 +131,20 @@ export default function SettingsPage() {
     e.preventDefault();
     if (!user) return;
 
-    setError(null);
-
     if (deleteConfirmText !== "DELETE") {
       setError('You must type "DELETE" to confirm.');
       return;
     }
 
+    setError(null);
+
     try {
       const cred = EmailAuthProvider.credential(user.email!, deletePassword);
       await reauthenticateWithCredential(user, cred);
 
-      // delete Firestore doc first
       await deleteDoc(doc(db, "users", user.uid));
-
       await deleteUser(user);
+
       router.push("/");
     } catch (err: any) {
       setError(err.message || "Failed to delete account.");
@@ -171,15 +153,11 @@ export default function SettingsPage() {
 
   if (loadingUser) {
     return (
-      <div className="flex items-center justify-center min-h-screen text-slate-500">
-        Loading…
+      <div className="min-h-screen flex items-center justify-center text-slate-500">
+        Loading settings…
       </div>
     );
   }
-
-  // ------------------------------
-  // MAIN SETTINGS UI
-  // ------------------------------
 
   return (
     <motion.main
@@ -199,9 +177,6 @@ export default function SettingsPage() {
       {/* PROFILE */}
       <section className="mt-8 bg-white dark:bg-slate-800 p-6 rounded-xl shadow border border-slate-200 dark:border-slate-700 max-w-2xl">
         <h2 className="text-xl font-semibold">Profile</h2>
-        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
-          Update your personal info.
-        </p>
 
         <form onSubmit={handleSaveProfile} className="mt-4 space-y-4">
           <div>
@@ -226,25 +201,24 @@ export default function SettingsPage() {
 
           <button
             type="submit"
-            className="px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 disabled:opacity-60"
             disabled={savingProfile}
+            className="px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 disabled:opacity-60"
           >
             {savingProfile ? "Saving…" : "Save Profile"}
           </button>
         </form>
       </section>
 
-      {/* PREFERENCES */}
+      {/* PREFERENCES (no theme setting anymore) */}
       <section className="mt-8 bg-white dark:bg-slate-800 p-6 rounded-xl shadow border border-slate-200 dark:border-slate-700 max-w-2xl">
         <h2 className="text-xl font-semibold">Preferences</h2>
 
         <div className="mt-4 space-y-4">
-          {/* EMAIL NOTIFS */}
           <div className="flex items-center justify-between">
             <div>
               <div className="font-medium text-sm">Email Notifications</div>
               <div className="text-xs text-slate-500 dark:text-slate-400">
-                Get supply alerts by email.
+                Receive email alerts for low or due items.
               </div>
             </div>
             <input
@@ -255,12 +229,11 @@ export default function SettingsPage() {
             />
           </div>
 
-          {/* LOW STOCK */}
           <div className="flex items-center justify-between">
             <div>
               <div className="font-medium text-sm">Low Stock Alerts</div>
               <div className="text-xs text-slate-500 dark:text-slate-400">
-                Extra warnings when items are almost empty.
+                Show warnings when items are nearly empty.
               </div>
             </div>
             <input
@@ -271,45 +244,10 @@ export default function SettingsPage() {
             />
           </div>
 
-          {/* THEME SELECTOR */}
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="font-medium text-sm">Theme</div>
-              <div className="text-xs text-slate-500 dark:text-slate-400">
-                Choose between light and dark mode.
-              </div>
-            </div>
-
-            <div className="flex bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-              <button
-                type="button"
-                className={`px-3 py-1 text-xs ${
-                  theme === "light"
-                    ? "bg-sky-600 text-white"
-                    : "text-slate-700 dark:text-slate-300"
-                }`}
-                onClick={() => setTheme("light")}
-              >
-                Light
-              </button>
-              <button
-                type="button"
-                className={`px-3 py-1 text-xs ${
-                  theme === "dark"
-                    ? "bg-sky-600 text-white"
-                    : "text-slate-700 dark:text-slate-300"
-                }`}
-                onClick={() => setTheme("dark")}
-              >
-                Dark
-              </button>
-            </div>
-          </div>
-
           <button
             type="button"
-            onClick={handleSavePrefs}
             disabled={savingPrefs}
+            onClick={handleSavePrefs}
             className="px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 disabled:opacity-60"
           >
             {savingPrefs ? "Saving…" : "Save Preferences"}
@@ -321,7 +259,7 @@ export default function SettingsPage() {
       <section className="mt-8 bg-white dark:bg-slate-800 p-6 rounded-xl shadow border border-slate-200 dark:border-slate-700 max-w-2xl">
         <h2 className="text-xl font-semibold">Security</h2>
 
-        {/* CHANGE PASSWORD */}
+        {/* PASSWORD */}
         <form onSubmit={handleChangePassword} className="mt-4 space-y-3 pb-5 border-b dark:border-slate-700">
           <div className="font-medium text-sm">Change Password</div>
 
@@ -356,7 +294,7 @@ export default function SettingsPage() {
 
           <input
             type="password"
-            placeholder="Enter password"
+            placeholder="Password for verification"
             className="w-full p-3 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
             value={deletePassword}
             onChange={(e) => setDeletePassword(e.target.value)}
