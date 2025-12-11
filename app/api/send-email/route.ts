@@ -16,7 +16,7 @@ export async function POST(req: Request) {
     }
 
     const email = await resend.emails.send({
-      from: "StockPilot <noreply@yourdomain.com>",
+      from: "StockPilot <alerts@stockpilot.qzz.io>",
       to,
       subject,
       html: `
