@@ -14,7 +14,9 @@ import {
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 
-export default function Dashboard() {
+import { motion, AnimatePresence } from "framer-motion";
+
+export default function ItemsPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [items, setItems] = useState<any[]>([]);
@@ -25,44 +27,40 @@ export default function Dashboard() {
   const [daysLast, setDaysLast] = useState("");
   const [vendor, setVendor] = useState("");
 
-  // Edit item modal
+  // Edit modal
   const [showEditModal, setShowEditModal] = useState(false);
   const [editItem, setEditItem] = useState<any>(null);
 
+  // Delete modal
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-const [deleteItemId, setDeleteItemId] = useState<string | null>(null);
+  const [deleteItemId, setDeleteItemId] = useState<string | null>(null);
 
-
-  // AUTH + ITEM SUBSCRIPTION
+  // AUTH + ITEMS
   useEffect(() => {
-    let unsubscribeItems: any = null;
+    let unsubItems: any = null;
 
     const unsubAuth = onAuthStateChanged(auth, (currentUser) => {
-      if (!currentUser) {
-        router.push("/login");
-        return;
-      }
+      if (!currentUser) return router.push("/login");
 
       setUser(currentUser);
 
-      unsubscribeItems = onSnapshot(
+      unsubItems = onSnapshot(
         collection(db, "users", currentUser.uid, "items"),
-        (snap) => {
+        (snap) =>
           setItems(
-            snap.docs.map((doc) => ({
-              id: doc.id,
-              ...doc.data(),
+            snap.docs.map((d) => ({
+              id: d.id,
+              ...d.data(),
             }))
-          );
-        }
+          )
       );
     });
 
     return () => {
       unsubAuth();
-      if (unsubscribeItems) unsubscribeItems();
+      if (unsubItems) unsubItems();
     };
-  }, [router]);
+  }, []);
 
   // ADD ITEM
   async function handleAddItem(e: any) {
@@ -88,357 +86,397 @@ const [deleteItemId, setDeleteItemId] = useState<string | null>(null);
     await deleteDoc(doc(db, "users", user.uid, "items", itemId));
   }
 
-  async function handleRefillItem(itemId: string) {
-  if (!user) return;
+  async function handleEditSubmit(e: any) {
+  e.preventDefault();
+  if (!user || !editItem) return;
 
   await updateDoc(
-    doc(db, "users", user.uid, "items", itemId),
+    doc(db, "users", user.uid, "items", editItem.id),
     {
-      createdAt: serverTimestamp(),
-    }
-  );
-}
-
-
-  // EDIT ITEM
-  async function handleEditSubmit(e: any) {
-    e.preventDefault();
-    if (!user || !editItem) return;
-
-    await updateDoc(doc(db, "users", user.uid, "items", editItem.id), {
       name: editItem.name,
       daysLast: Number(editItem.daysLast),
       vendor: editItem.vendor,
-    });
-
-    setShowEditModal(false);
-    setEditItem(null);
-  }
-
-  // STATUS & DAYS REMAINING CALCULATOR
-function getStatus(item: any) {
-  if (!item.createdAt) return null;
-
-  const createdDate = item.createdAt.toDate();
-  const today = new Date();
-
-  const msPerDay = 1000 * 60 * 60 * 24;
-  const diffDays = Math.floor(
-    (today.getTime() - createdDate.getTime()) / msPerDay
+    }
   );
 
-  const daysLeft = item.daysLast - diffDays;
-
-  if (daysLeft <= 0) return { label: "Due Today", color: "red", daysLeft: 0 };
-  if (daysLeft <= 3) return { label: "Running Low", color: "amber", daysLeft };
-  return { label: "OK", color: "green", daysLeft };
+  setShowEditModal(false);
+  setEditItem(null);
 }
 
 
+  // REFILL
+  async function handleRefillItem(id: string) {
+    if (!user) return;
+    await updateDoc(doc(db, "users", user.uid, "items", id), {
+      createdAt: serverTimestamp(),
+    });
+  }
+
+  // STATUS CALC
+  function getStatus(item: any) {
+    if (!item.createdAt) return null;
+
+    const created = item.createdAt.toDate();
+    const now = new Date();
+    const diff = Math.floor((now.getTime() - created.getTime()) / 86400000);
+
+    const daysLeft = item.daysLast - diff;
+
+    if (daysLeft <= 0) return { label: "Due Today", color: "red", daysLeft: 0 };
+    if (daysLeft <= 3) return { label: "Running Low", color: "amber", daysLeft };
+    return { label: "OK", color: "green", daysLeft };
+  }
+
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <motion.div
+      className="min-h-screen bg-slate-50 flex"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+    >
 
       {/* ========================= */}
-      {/* SIDEBAR */}
+      {/* SIDEBAR – SAME AS DASHBOARD */}
       {/* ========================= */}
       <aside className="w-64 bg-white border-r p-6 hidden md:flex flex-col">
-        <h1 className="text-2xl font-bold mb-8">StockPilot</h1>
+        <motion.h1
+          className="text-2xl font-bold mb-8"
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+        >
+          StockPilot
+        </motion.h1>
 
         <nav className="flex flex-col gap-2">
-          <a
+          <motion.a
             href="/dashboard"
+            whileHover={{ x: 4 }}
             className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-100"
           >
             📊 Dashboard
-          </a>
+          </motion.a>
 
-          <a
-            href="/dashboard"
-            className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-100"
+          <motion.a
+            href="/dashboard/items"
+            whileHover={{ x: 4 }}
+            className="flex items-center gap-3 p-2 rounded-lg bg-slate-100 font-semibold"
           >
             📦 Items
-          </a>
+          </motion.a>
 
-          <a
+          <motion.a
             href="#"
+            whileHover={{ x: 4 }}
             className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-100"
           >
             ⚙️ Settings
-          </a>
+          </motion.a>
         </nav>
 
-        <button
+        <motion.button
           onClick={() => signOut(auth)}
-          className="mt-auto w-full bg-red-500 text-white py-2 rounded-lg hover:bg-red-600"
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
+          className="mt-auto bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg"
         >
           Log Out
-        </button>
+        </motion.button>
       </aside>
 
       {/* ========================= */}
       {/* MAIN CONTENT */}
       {/* ========================= */}
       <main className="flex-1 p-10">
-        <div className="max-w-4xl mx-auto">
-          {/* HEADER */}
-          <div className="flex justify-between items-center mb-8">
-            <h1 className="text-3xl font-bold">Welcome, {user?.email}</h1>
+        <motion.h1
+          className="text-3xl font-bold"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          Items
+        </motion.h1>
 
-            <button
-              onClick={() => signOut(auth)}
-              className="bg-red-500 text-white px-4 py-2 rounded-lg"
+        <motion.div
+          className="mt-8 bg-white p-6 rounded-xl shadow"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">Your Items</h2>
+
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => setShowModal(true)}
+              className="bg-sky-600 text-white px-4 py-2 rounded-lg"
             >
-              Log out
-            </button>
+              + Add Item
+            </motion.button>
           </div>
 
-          
-
-          {/* ITEMS PANEL */}
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Your Items</h2>
-
-              <button
-                onClick={() => setShowModal(true)}
-                className="bg-sky-600 text-white px-4 py-2 rounded-lg"
-              >
-                + Add Item
-              </button>
-            </div>
-
+          <AnimatePresence>
             {items.length === 0 ? (
               <p className="text-slate-500">No items yet! Add your first one.</p>
             ) : (
               <div className="space-y-3">
-                {items.map((item) => (
-                  <div
-                    key={item.id}
-                    className="p-4 border rounded-lg flex justify-between items-center hover:bg-slate-100 transition"
-                  >
-                    <div className="flex flex-col">
-  <h3 className="font-semibold">{item.name}</h3>
+                {items.map((item) => {
+                  const s = getStatus(item);
 
-  {/* Status pill */}
-  {(() => {
-    const s = getStatus(item);
-    return s ? (
-      <span
-        className={`mt-1 inline-block px-2 py-1 text-xs rounded bg-${s.color}-100 text-${s.color}-700`}
-      >
-        {s.label} • {s.daysLeft} days left
-      </span>
-    ) : null;
-  })()}
+                  return (
+                    <motion.div
+                      key={item.id}
+                      layout
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      className="p-4 border rounded-lg flex justify-between items-center bg-white hover:bg-slate-100 transition"
+                    >
+                      <div className="flex flex-col">
+                        <h3 className="font-semibold">{item.name}</h3>
 
-  <p className="text-slate-500 text-sm mt-2">
-    From: {item.vendor}
-    <br />
-    Last refilled:{" "}
-    {item.createdAt ? item.createdAt.toDate().toLocaleDateString() : "Unknown"}
-  </p>
-</div>
+                        {s && (
+                          <span
+                            className={`mt-1 inline-block px-2 py-1 text-xs rounded bg-${s.color}-100 text-${s.color}-700`}
+                          >
+                            {s.label} • {s.daysLeft} days left
+                          </span>
+                        )}
 
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => {
-                          setEditItem(item);
-                          setShowEditModal(true);
-                        }}
-                        className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-md"
-                      >
-                        Edit
-                      </button>
+                        <p className="text-slate-500 text-sm mt-2">
+                          From: {item.vendor} <br />
+                          Last refilled:{" "}
+                          {item.createdAt
+                            ? item.createdAt.toDate().toLocaleDateString()
+                            : "Unknown"}
+                        </p>
+                      </div>
 
-                      <button
-  onClick={() => {
-    setDeleteItemId(item.id);
-    setShowDeleteModal(true);
-  }}
-  className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-md"
->
-  Delete
-</button>
+                      <div className="flex gap-2">
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.97 }}
+                          onClick={() => {
+                            setEditItem(item);
+                            setShowEditModal(true);
+                          }}
+                          className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-md"
+                        >
+                          Edit
+                        </motion.button>
 
-                      <button
-  onClick={() => handleRefillItem(item.id)}
-  className="px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded-md cursor-pointer"
->
-  Refill
-</button>
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.97 }}
+                          onClick={() => {
+                            setDeleteItemId(item.id);
+                            setShowDeleteModal(true);
+                          }}
+                          className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-md"
+                        >
+                          Delete
+                        </motion.button>
 
-                    </div>
-                  </div>
-                ))}
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.97 }}
+                          onClick={() => handleRefillItem(item.id)}
+                          className="px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded-md"
+                        >
+                          Refill
+                        </motion.button>
+                      </div>
+                    </motion.div>
+                  );
+                })}
               </div>
             )}
-          </div>
-        </div>
+          </AnimatePresence>
+        </motion.div>
       </main>
 
       {/* ========================= */}
       {/* ADD ITEM MODAL */}
       {/* ========================= */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-md rounded-xl shadow-lg p-6">
-            <h2 className="text-xl font-semibold">Add New Item</h2>
+      <AnimatePresence>
+        {showModal && (
+          <motion.div
+            className="fixed inset-0 bg-black/40 flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="bg-white w-full max-w-md rounded-xl shadow-lg p-6"
+              initial={{ scale: 0.85, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.85, opacity: 0 }}
+            >
+              <h2 className="text-xl font-semibold">Add New Item</h2>
 
-            <form onSubmit={handleAddItem} className="mt-4 space-y-4">
-              <div>
-                <label className="text-sm text-slate-600">Item name</label>
+              <form onSubmit={handleAddItem} className="mt-4 space-y-4">
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full p-3 mt-1 border rounded-lg"
+                  placeholder="Item name"
+                  className="w-full p-3 border rounded-lg"
                 />
-              </div>
 
-              <div>
-                <label className="text-sm text-slate-600">Days it lasts</label>
                 <input
                   type="number"
                   value={daysLast}
                   onChange={(e) => setDaysLast(e.target.value)}
-                  className="w-full p-3 mt-1 border rounded-lg"
+                  placeholder="Days it lasts"
+                  className="w-full p-3 border rounded-lg"
                 />
-              </div>
 
-              <div>
-                <label className="text-sm text-slate-600">Vendor</label>
                 <input
                   value={vendor}
                   onChange={(e) => setVendor(e.target.value)}
-                  className="w-full p-3 mt-1 border rounded-lg"
+                  placeholder="Vendor"
+                  className="w-full p-3 border rounded-lg"
                 />
-              </div>
 
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="w-1/2 p-3 rounded-lg border"
-                >
-                  Cancel
-                </button>
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowModal(false)}
+                    className="w-1/2 border p-3 rounded-lg"
+                  >
+                    Cancel
+                  </button>
 
-                <button
-                  type="submit"
-                  className="w-1/2 bg-sky-600 text-white p-3 rounded-lg"
-                >
-                  Save
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+                  <button
+                    type="submit"
+                    className="w-1/2 bg-sky-600 text-white p-3 rounded-lg"
+                  >
+                    Save
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-           {/* ========================= */}
+      {/* ========================= */}
       {/* EDIT ITEM MODAL */}
       {/* ========================= */}
-      {showEditModal && editItem && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-md rounded-xl shadow-lg p-6">
-            <h2 className="text-xl font-semibold">Edit Item</h2>
+      <AnimatePresence>
+        {showEditModal && editItem && (
+          <motion.div
+            className="fixed inset-0 bg-black/40 flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="bg-white w-full max-w-md rounded-xl shadow-lg p-6"
+              initial={{ scale: 0.85, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.85, opacity: 0 }}
+            >
+              <h2 className="text-xl font-semibold">Edit Item</h2>
 
-            <form onSubmit={handleEditSubmit} className="mt-4 space-y-4">
-              <div>
-                <label className="text-sm text-slate-600">Item name</label>
+              <form onSubmit={handleEditSubmit} className="mt-4 space-y-4">
                 <input
                   value={editItem.name}
                   onChange={(e) =>
                     setEditItem({ ...editItem, name: e.target.value })
                   }
-                  className="w-full p-3 mt-1 border rounded-lg"
+                  className="w-full p-3 border rounded-lg"
                 />
-              </div>
 
-              <div>
-                <label className="text-sm text-slate-600">Days it lasts</label>
                 <input
                   type="number"
                   value={editItem.daysLast}
                   onChange={(e) =>
-                    setEditItem({ ...editItem, daysLast: e.target.value })
+                    setEditItem({
+                      ...editItem,
+                      daysLast: Number(e.target.value),
+                    })
                   }
-                  className="w-full p-3 mt-1 border rounded-lg"
+                  className="w-full p-3 border rounded-lg"
                 />
-              </div>
 
-              <div>
-                <label className="text-sm text-slate-600">Vendor</label>
                 <input
                   value={editItem.vendor}
                   onChange={(e) =>
                     setEditItem({ ...editItem, vendor: e.target.value })
                   }
-                  className="w-full p-3 mt-1 border rounded-lg"
+                  className="w-full p-3 border rounded-lg"
                 />
-              </div>
 
-              <div className="flex gap-3 pt-2">
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowEditModal(false);
+                      setEditItem(null);
+                    }}
+                    className="w-1/2 p-3 border rounded-lg"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="submit"
+                    className="w-1/2 bg-blue-600 text-white p-3 rounded-lg"
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ========================= */}
+      {/* DELETE CONFIRMATION MODAL */}
+      {/* ========================= */}
+      <AnimatePresence>
+        {showDeleteModal && deleteItemId && (
+          <motion.div
+            className="fixed inset-0 bg-black/40 flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="bg-white w-full max-w-sm rounded-xl shadow-lg p-6 text-center"
+              initial={{ scale: 0.85, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.85, opacity: 0 }}
+            >
+              <h2 className="text-xl font-semibold">Delete Item?</h2>
+              <p className="text-slate-600 mt-2">
+                This action cannot be undone.
+              </p>
+
+              <div className="flex gap-3 mt-6">
                 <button
-                  type="button"
                   onClick={() => {
-                    setShowEditModal(false);
-                    setEditItem(null);
+                    setShowDeleteModal(false);
+                    setDeleteItemId(null);
                   }}
-                  className="w-1/2 p-3 rounded-lg border"
+                  className="w-1/2 border p-3 rounded-lg"
                 >
                   Cancel
                 </button>
 
                 <button
-                  type="submit"
-                  className="w-1/2 bg-blue-600 text-white p-3 rounded-lg"
+                  onClick={() => {
+                    handleDeleteItem(deleteItemId);
+                    setShowDeleteModal(false);
+                    setDeleteItemId(null);
+                  }}
+                  className="w-1/2 bg-red-600 text-white p-3 rounded-lg"
                 >
-                  Save Changes
+                  Delete
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ========================= */}
-      {/* DELETE CONFIRMATION MODAL */}
-      {/* ========================= */}
-      {showDeleteModal && deleteItemId && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-sm rounded-xl shadow-lg p-6 text-center">
-            <h2 className="text-xl font-semibold">Delete Item?</h2>
-            <p className="text-slate-600 mt-2">
-              This action cannot be undone.
-            </p>
-
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={() => {
-                  setShowDeleteModal(false);
-                  setDeleteItemId(null);
-                }}
-                className="w-1/2 p-3 rounded-lg border"
-              >
-                Cancel
-              </button>
-
-              <button
-                onClick={() => {
-                  handleDeleteItem(deleteItemId);
-                  setShowDeleteModal(false);
-                  setDeleteItemId(null);
-                }}
-                className="w-1/2 bg-red-600 text-white p-3 rounded-lg"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-
-    </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 }
