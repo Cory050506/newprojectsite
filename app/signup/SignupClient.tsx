@@ -69,12 +69,12 @@ const [selectedPlan, setSelectedPlan] =
       const orgRef = doc(db, "organizations", user.uid);
 
       await setDoc(orgRef, {
-        name: orgName,
-        ownerId: user.uid,
-        plan: selectedPlan,
-        status: "trial", // becomes "active" after Stripe
-        createdAt: serverTimestamp(),
-      });
+  name: orgName,
+  ownerId: user.uid,
+  plan: selectedPlan,
+  status: "active", // or remove status entirely if you want
+  createdAt: serverTimestamp(),
+});
 
       // 4️⃣ Create user profile
       await setDoc(doc(db, "users", user.uid), {
@@ -100,15 +100,19 @@ const [selectedPlan, setSelectedPlan] =
   // UI
   // -----------------------------
   return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-50 px-6">
-      <div className="w-full max-w-md bg-white p-8 rounded-xl shadow relative">
+  <div className="min-h-screen bg-zinc-50 px-6 relative">
 
-        <a
-          href="/"
-          className="absolute top-6 left-6 text-sky-600 font-medium hover:underline"
-        >
-          ← Back to Home
-        </a>
+    {/* BACK TO HOME — PAGE LEVEL */}
+    <a
+      href="/"
+      className="absolute top-6 left-6 text-sky-600 font-medium hover:underline z-10"
+    >
+      ← Back to Home
+    </a>
+
+    {/* CENTERED SIGNUP CARD */}
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="w-full max-w-md bg-white p-8 rounded-xl shadow">
 
         <h1 className="text-3xl font-bold text-center">
           Create your account
@@ -117,7 +121,7 @@ const [selectedPlan, setSelectedPlan] =
         <p className="text-center text-sm text-zinc-500 mt-2">
           Plan selected:{" "}
           <span className="font-medium capitalize">
-            {PLANS[selectedPlan as keyof typeof PLANS].name}
+            {PLANS[selectedPlan].name}
           </span>
         </p>
 
@@ -129,27 +133,25 @@ const [selectedPlan, setSelectedPlan] =
 
         <form onSubmit={handleSignup} className="mt-6 space-y-4">
 
-            {/* PLAN */}
-{/* PLAN */}
-<div>
-  <label className="block text-sm font-medium text-zinc-700">
-    Plan
-  </label>
-
-  <select
-    value={selectedPlan}
-    onChange={(e) =>
-      setSelectedPlan(e.target.value as keyof typeof PLANS)
-    }
-    className="mt-1 w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-sky-500"
-  >
-    <option value="basic">Basic — 15 items</option>
-    <option value="pro">Pro — Unlimited items</option>
-    <option value="premium">
-      Premium — Unlimited + multi-location
-    </option>
-  </select>
-</div>
+          {/* PLAN */}
+          <div>
+            <label className="block text-sm font-medium text-zinc-700">
+              Plan
+            </label>
+            <select
+              value={selectedPlan}
+              onChange={(e) =>
+                setSelectedPlan(e.target.value as keyof typeof PLANS)
+              }
+              className="mt-1 w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-sky-500"
+            >
+              <option value="basic">Basic — 15 items</option>
+              <option value="pro">Pro — Unlimited items</option>
+              <option value="premium">
+                Premium — Unlimited + multi-location
+              </option>
+            </select>
+          </div>
 
           {/* FULL NAME */}
           <div>
@@ -162,11 +164,10 @@ const [selectedPlan, setSelectedPlan] =
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="mt-1 w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-sky-500"
-              placeholder="Your full name"
             />
           </div>
 
-          {/* ORGANIZATION NAME */}
+          {/* ORG NAME */}
           <div>
             <label className="block text-sm font-medium text-zinc-700">
               Organization Name
@@ -177,7 +178,6 @@ const [selectedPlan, setSelectedPlan] =
               value={orgName}
               onChange={(e) => setOrgName(e.target.value)}
               className="mt-1 w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-sky-500"
-              placeholder="Your company or organization"
             />
           </div>
 
@@ -192,7 +192,6 @@ const [selectedPlan, setSelectedPlan] =
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="mt-1 w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-sky-500"
-              placeholder="you@business.com"
             />
           </div>
 
@@ -208,11 +207,9 @@ const [selectedPlan, setSelectedPlan] =
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="mt-1 w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-sky-500"
-              placeholder="Minimum 6 characters"
             />
           </div>
 
-          {/* SUBMIT */}
           <button
             type="submit"
             disabled={loading}
@@ -230,5 +227,6 @@ const [selectedPlan, setSelectedPlan] =
         </p>
       </div>
     </div>
-  );
+  </div>
+);
 }
