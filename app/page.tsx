@@ -206,7 +206,7 @@ export default function Home() {
         "Supplier tracking",
         "Email support",
       ]}
-      cta="Start Free Trial"
+      cta="Subscribe"
       href="/signup?plan=pro"
       featured
     />
@@ -223,7 +223,7 @@ export default function Home() {
         "Advanced analytics",
         "Priority onboarding",
       ]}
-      cta="Upgrade to Premium"
+      cta="Subscribe"
       href="/signup?plan=premium"
     />
   </div>
@@ -238,10 +238,10 @@ export default function Home() {
         </p>
       </div>
       <a
-        href="/contact"
+        href="/"
         className="px-5 py-2 rounded-lg border bg-white hover:bg-slate-100"
       >
-        Contact Sales
+        Coming soon! ETA Q1 2026
       </a>
     </div>
   </div>

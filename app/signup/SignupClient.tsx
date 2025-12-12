@@ -19,14 +19,17 @@ export default function SignupPage() {
   const params = useSearchParams();
 
   // -----------------------------
-  // PLAN SELECTION
-  // -----------------------------
-  
+// PLAN SELECTION (FIXED)
+// -----------------------------
+const rawPlan = params.get("plan");
 
-  const rawPlan = params.get("plan");
+const initialPlan: keyof typeof PLANS =
+  rawPlan && rawPlan in PLANS
+    ? (rawPlan as keyof typeof PLANS)
+    : "basic";
 
-const selectedPlan: keyof typeof PLANS =
-  rawPlan && rawPlan in PLANS ? (rawPlan as keyof typeof PLANS) : "basic";
+const [selectedPlan, setSelectedPlan] =
+  useState<keyof typeof PLANS>(initialPlan);
 
   // -----------------------------
   // FORM STATE
@@ -127,18 +130,24 @@ const selectedPlan: keyof typeof PLANS =
         <form onSubmit={handleSignup} className="mt-6 space-y-4">
 
             {/* PLAN */}
+{/* PLAN */}
 <div>
   <label className="block text-sm font-medium text-zinc-700">
     Plan
   </label>
+
   <select
     value={selectedPlan}
-    disabled
-    className="mt-1 w-full border rounded-lg px-3 py-2 bg-gray-100 cursor-not-allowed"
+    onChange={(e) =>
+      setSelectedPlan(e.target.value as keyof typeof PLANS)
+    }
+    className="mt-1 w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-sky-500"
   >
     <option value="basic">Basic — 15 items</option>
     <option value="pro">Pro — Unlimited items</option>
-    <option value="premium">Premium — Unlimited + multi-location</option>
+    <option value="premium">
+      Premium — Unlimited + multi-location
+    </option>
   </select>
 </div>
 
