@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { auth, db } from "../../../lib/firebase";
 import {
   doc,
@@ -14,26 +14,21 @@ import {
 import { onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { sendAlertEmail } from "@/lib/email"; // keep if your alias works
 
-// ============================
-// EMAIL SENDER
-// ============================
-async function sendEmail(to: string, subject: string, message: string) {
-  try {
-    await fetch("/api/send-email", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ to, subject, message }),
-    });
-  } catch (err) {
-    console.error("Failed to send email", err);
-  }
-}
+type ItemDoc = {
+  id: string;
+  name: string;
+  vendor?: string;
+  daysLast: number;
+  createdAt?: any; // Firestore Timestamp
+};
 
 export default function ItemsPage() {
   const router = useRouter();
+
   const [user, setUser] = useState<any>(null);
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<ItemDoc[]>([]);
 
   // MODALS
   const [showAdd, setShowAdd] = useState(false);
@@ -48,9 +43,12 @@ export default function ItemsPage() {
   const [editItem, setEditItem] = useState<any>(null);
   const [deleteItemId, setDeleteItemId] = useState<string | null>(null);
 
-  // AUTH + FETCH
+  // Track status we already emailed for each item id: "low" | "out"
+  const [alertedStatus, setAlertedStatus] = useState<Record<string, "low" | "out">>({});
+
+  // AUTH + FETCH + ALERTS
   useEffect(() => {
-    let unsubItems: any;
+    let unsubItems: (() => void) | undefined;
 
     const unsubAuth = onAuthStateChanged(auth, (currentUser) => {
       if (!currentUser) {
@@ -63,12 +61,55 @@ export default function ItemsPage() {
       unsubItems = onSnapshot(
         collection(db, "users", currentUser.uid, "items"),
         (snap) => {
-          setItems(
-            snap.docs.map((d) => ({
+          const itemsData: ItemDoc[] = snap.docs.map((d) => {
+            const data = d.data() as any;
+            return {
               id: d.id,
-              ...d.data(),
-            }))
-          );
+              name: data.name,
+              vendor: data.vendor,
+              daysLast: Number(data.daysLast ?? 0),
+              createdAt: data.createdAt,
+            };
+          });
+
+          // Update UI list
+          setItems(itemsData);
+
+          // Email logic: only when status transitions to low/out
+          itemsData.forEach((item) => {
+            if (!item.createdAt) return;
+            if (!currentUser.email) return;
+
+            const created = item.createdAt.toDate();
+            const diffDays = Math.floor((Date.now() - created.getTime()) / 86400000);
+            const daysLeft = Math.max(item.daysLast - diffDays, 0);
+
+            let status: "ok" | "low" | "out" = "ok";
+            if (daysLeft <= 0) status = "out";
+            else if (daysLeft <= 3) status = "low";
+
+            if (status === "ok") return;
+
+            // If we've already emailed for this status, do nothing
+            if (alertedStatus[item.id] === status) return;
+
+            // Send alert email
+            sendAlertEmail({
+              toEmail: currentUser.email,
+              toName: currentUser.displayName || "there",
+              subject:
+                status === "out"
+                  ? `🚨 ${item.name} is OUT`
+                  : `⚠️ ${item.name} is running low`,
+              message:
+                status === "out"
+                  ? `${item.name} has run out and needs immediate restocking.`
+                  : `${item.name} will run out in ${daysLeft} day(s).`,
+            });
+
+            // Mark as alerted in memory to prevent spam
+            setAlertedStatus((prev) => ({ ...prev, [item.id]: status }));
+          });
         }
       );
     });
@@ -77,70 +118,33 @@ export default function ItemsPage() {
       unsubAuth();
       unsubItems?.();
     };
-  }, [router]);
+  }, [router, alertedStatus]);
 
-  // ============================
-  // STATUS BADGE + EMAIL TRIGGERS
-  // ============================
-  function getStatus(item: any) {
+  // STATUS BADGE (UI ONLY, NO SIDE EFFECTS)
+  function getStatus(item: ItemDoc) {
     if (!item.createdAt) return null;
 
     const created = item.createdAt.toDate();
-    const now = new Date();
-    const diff = Math.floor((now.getTime() - created.getTime()) / 86400000);
-
+    const diff = Math.floor((Date.now() - created.getTime()) / 86400000);
     const daysLeft = item.daysLast - diff;
 
-    const isLow = daysLeft <= 3 && daysLeft > 0;
-    const isDue = daysLeft <= 0;
-
-    // ---- Low-stock email (once) ----
-    if (isLow && !item.notifiedLow && user) {
-      sendEmail(
-        user.email,
-        `Low Stock Alert: ${item.name}`,
-        `${item.name} is running low with about ${daysLeft} day(s) left.`
-      );
-
-      updateDoc(doc(db, "users", user.uid, "items", item.id), {
-        notifiedLow: true,
-      });
-    }
-
-    // ---- Due-today / overdue email (once) ----
-    if (isDue && !item.notifiedDue && user) {
-      sendEmail(
-        user.email,
-        `Restock Needed: ${item.name}`,
-        `${item.name} has run out (or is due today) and needs to be refilled.`
-      );
-
-      updateDoc(doc(db, "users", user.uid, "items", item.id), {
-        notifiedDue: true,
-      });
-    }
-
-    // UI badge styles
-    if (isDue)
+    if (daysLeft <= 0)
       return {
         label: "Due Today",
-        color:
-          "bg-red-200 dark:bg-red-900 text-red-800 dark:text-red-200",
+        color: "bg-red-200 dark:bg-red-900 text-red-800 dark:text-red-200",
         daysLeft: 0,
       };
 
-    if (isLow)
+    if (daysLeft <= 3)
       return {
         label: "Running Low",
-        color:
-          "bg-amber-200 dark:bg-amber-900 text-amber-800 dark:text-amber-200",
+        color: "bg-amber-200 dark:bg-amber-900 text-amber-800 dark:text-amber-200",
         daysLeft,
       };
 
     return {
       label: "OK",
-      color:
-        "bg-green-200 dark:bg-green-900 text-green-800 dark:text-green-200",
+      color: "bg-green-200 dark:bg-green-900 text-green-800 dark:text-green-200",
       daysLeft,
     };
   }
@@ -155,8 +159,6 @@ export default function ItemsPage() {
       daysLast: Number(daysLast),
       vendor,
       createdAt: serverTimestamp(),
-      notifiedLow: false,
-      notifiedDue: false,
     });
 
     setName("");
@@ -184,16 +186,27 @@ export default function ItemsPage() {
   async function handleDeleteItem(id: string | null) {
     if (!user || !id) return;
     await deleteDoc(doc(db, "users", user.uid, "items", id));
+
+    // clean alert memory
+    setAlertedStatus((prev) => {
+      const copy = { ...prev };
+      delete copy[id];
+      return copy;
+    });
   }
 
-  // REFILL — RESET ALERT FLAGS
+  // REFILL — resets createdAt and clears alert memory so it can alert again later
   async function handleRefillItem(id: string) {
     if (!user) return;
 
     await updateDoc(doc(db, "users", user.uid, "items", id), {
       createdAt: serverTimestamp(),
-      notifiedLow: false,
-      notifiedDue: false,
+    });
+
+    setAlertedStatus((prev) => {
+      const copy = { ...prev };
+      delete copy[id];
+      return copy;
     });
   }
 
@@ -241,19 +254,15 @@ export default function ItemsPage() {
                   <h3 className="font-semibold">{item.name}</h3>
 
                   {status && (
-                    <span
-                      className={`mt-1 inline-block px-2 py-1 text-xs rounded ${status.color}`}
-                    >
+                    <span className={`mt-1 inline-block px-2 py-1 text-xs rounded ${status.color}`}>
                       {status.label} • {status.daysLeft} days left
                     </span>
                   )}
 
                   <p className="text-slate-500 dark:text-slate-300 text-sm mt-2">
-                    From: {item.vendor} <br />
+                    From: {item.vendor || "—"} <br />
                     Last refilled:{" "}
-                    {item.createdAt
-                      ? item.createdAt.toDate().toLocaleDateString()
-                      : "Unknown"}
+                    {item.createdAt ? item.createdAt.toDate().toLocaleDateString() : "Unknown"}
                   </p>
                 </div>
 
@@ -297,9 +306,7 @@ export default function ItemsPage() {
         </div>
       </motion.div>
 
-      {/* ============================= */}
       {/* ADD MODAL */}
-      {/* ============================= */}
       <AnimatePresence>
         {showAdd && (
           <motion.div
@@ -348,10 +355,7 @@ export default function ItemsPage() {
                     Cancel
                   </button>
 
-                  <button
-                    type="submit"
-                    className="w-1/2 bg-sky-600 text-white p-3 rounded-lg"
-                  >
+                  <button type="submit" className="w-1/2 bg-sky-600 text-white p-3 rounded-lg">
                     Save
                   </button>
                 </div>
@@ -361,9 +365,7 @@ export default function ItemsPage() {
         )}
       </AnimatePresence>
 
-      {/* ============================= */}
       {/* EDIT MODAL */}
-      {/* ============================= */}
       <AnimatePresence>
         {showEdit && editItem && (
           <motion.div
@@ -383,9 +385,7 @@ export default function ItemsPage() {
               <form onSubmit={handleEditSubmit} className="space-y-4 mt-4">
                 <input
                   value={editItem.name}
-                  onChange={(e) =>
-                    setEditItem({ ...editItem, name: e.target.value })
-                  }
+                  onChange={(e) => setEditItem({ ...editItem, name: e.target.value })}
                   className="w-full border dark:border-slate-600 bg-white dark:bg-slate-900 p-3 rounded-lg"
                 />
 
@@ -403,28 +403,16 @@ export default function ItemsPage() {
 
                 <input
                   value={editItem.vendor}
-                  onChange={(e) =>
-                    setEditItem({
-                      ...editItem,
-                      vendor: e.target.value,
-                    })
-                  }
+                  onChange={(e) => setEditItem({ ...editItem, vendor: e.target.value })}
                   className="w-full border dark:border-slate-600 bg-white dark:bg-slate-900 p-3 rounded-lg"
                 />
 
                 <div className="flex gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowEdit(false)}
-                    className="w-1/2 p-3 border rounded-lg"
-                  >
+                  <button type="button" onClick={() => setShowEdit(false)} className="w-1/2 p-3 border rounded-lg">
                     Cancel
                   </button>
 
-                  <button
-                    type="submit"
-                    className="w-1/2 bg-blue-600 text-white p-3 rounded-lg"
-                  >
+                  <button type="submit" className="w-1/2 bg-blue-600 text-white p-3 rounded-lg">
                     Save Changes
                   </button>
                 </div>
@@ -434,9 +422,7 @@ export default function ItemsPage() {
         )}
       </AnimatePresence>
 
-      {/* ============================= */}
       {/* DELETE MODAL */}
-      {/* ============================= */}
       <AnimatePresence>
         {showDelete && deleteItemId && (
           <motion.div
@@ -452,9 +438,7 @@ export default function ItemsPage() {
               exit={{ scale: 0.85, opacity: 0 }}
             >
               <h2 className="text-xl font-semibold">Delete Item?</h2>
-              <p className="text-slate-600 dark:text-slate-300 mt-2">
-                This action cannot be undone.
-              </p>
+              <p className="text-slate-600 dark:text-slate-300 mt-2">This action cannot be undone.</p>
 
               <div className="flex gap-3 mt-6">
                 <button

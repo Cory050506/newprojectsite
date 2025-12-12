@@ -102,7 +102,7 @@ export default function Home() {
             </div>
 
             <ul className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-slate-600">
-              <li>✅ Email & SMS reminders</li>
+              <li>✅ Email reminders</li>
               <li>✅ Team access & multi-location</li>
               <li>✅ Smart prediction system</li>
               <li>✅ CSV export & analytics</li>
