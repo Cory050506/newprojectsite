@@ -29,12 +29,6 @@ export default function Home() {
       >
         <div className="mx-auto max-w-7xl px-6 flex items-center justify-between">
           <a className="flex items-center gap-3" href="#">
-            <motion.div
-              className="w-10 h-10 rounded-full bg-gradient-to-br from-sky-500 to-blue-700 flex items-center justify-center text-white font-semibold"
-              whileHover={{ rotate: 5, scale: 1.05 }}
-            >
-              SP
-            </motion.div>
             <div>
               <img src="Logo no text.svg" alt="StockPilot Logo" className="w-8 h-8 md:hidden" />
               <div className="font-semibold">StockPilot</div>
