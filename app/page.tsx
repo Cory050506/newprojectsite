@@ -22,13 +22,13 @@ export default function Home() {
 
       {/* NAV */}
       <motion.header
-        className="border-b py-4"
+        className="border-b py-4 sticky top-0 bg-white/90 z-50 dark:bg-slate-900/90 backdrop-blur"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.6 }}
       >
         <div className="mx-auto max-w-7xl px-6 flex items-center justify-between">
-          import Image from "next/image";
+          
 
 <a href="/" className="flex items-center gap-3">
   <Image
