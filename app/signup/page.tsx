@@ -1,56 +1,103 @@
 "use client";
 
 import { useState } from "react";
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { useSearchParams, useRouter } from "next/navigation";
+import {
+  createUserWithEmailAndPassword,
+  updateProfile,
+} from "firebase/auth";
 import { auth, db } from "../../lib/firebase";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import {
+  doc,
+  setDoc,
+  serverTimestamp,
+} from "firebase/firestore";
+import { PLANS } from "@/lib/plans";
 
 export default function SignupPage() {
+  const router = useRouter();
+  const params = useSearchParams();
+
+  // -----------------------------
+  // PLAN SELECTION
+  // -----------------------------
+  const selectedPlan = params.get("plan") || "basic";
+
+  if (!PLANS[selectedPlan as keyof typeof PLANS]) {
+    throw new Error("Invalid plan selected");
+  }
+
+  // -----------------------------
+  // FORM STATE
+  // -----------------------------
   const [name, setName] = useState("");
+  const [orgName, setOrgName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // -----------------------------
+  // SIGNUP HANDLER
+  // -----------------------------
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError("");
 
     try {
-      // Create auth account
-      const userCred = await createUserWithEmailAndPassword(auth, email, password);
+      // 1️⃣ Create Firebase Auth user
+      const userCred = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
 
-      // Set FirebaseAuth displayName
-      await updateProfile(userCred.user, {
+      const user = userCred.user;
+
+      // 2️⃣ Set display name
+      await updateProfile(user, {
         displayName: name,
       });
 
-      // Save user Firestore profile
-      await setDoc(doc(db, "users", userCred.user.uid), {
-        name,
-        email,
+      // 3️⃣ Create organization
+      const orgRef = doc(db, "organizations", user.uid);
+
+      await setDoc(orgRef, {
+        name: orgName,
+        ownerId: user.uid,
+        plan: selectedPlan,
+        status: "trial", // becomes "active" after Stripe
         createdAt: serverTimestamp(),
       });
 
-      window.location.href = "/dashboard";
-    } catch (err: any) {
-      setError(err.message || "Signup failed");
-    }
+      // 4️⃣ Create user profile
+      await setDoc(doc(db, "users", user.uid), {
+        name,
+        email,
+        orgId: user.uid,
+        role: "admin",
+        createdAt: serverTimestamp(),
+      });
 
-    setLoading(false);
+      // 5️⃣ Redirect (Stripe comes next)
+      router.push("/dashboard");
+
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Signup failed");
+    } finally {
+      setLoading(false);
+    }
   }
 
+  // -----------------------------
+  // UI
+  // -----------------------------
   return (
     <div className="min-h-screen flex items-center justify-center bg-zinc-50 px-6">
-      <div className="w-full max-w-md bg-white p-8 rounded-xl shadow">
-        <h1 className="text-3xl font-bold text-center">Create your account</h1>
-
-        {error && (
-          <div className="mt-4 bg-red-100 text-red-700 p-2 text-sm rounded">
-            {error}
-          </div>
-        )}
+      <div className="w-full max-w-md bg-white p-8 rounded-xl shadow relative">
 
         <a
           href="/"
@@ -59,7 +106,26 @@ export default function SignupPage() {
           ← Back to Home
         </a>
 
+        <h1 className="text-3xl font-bold text-center">
+          Create your account
+        </h1>
+
+        <p className="text-center text-sm text-zinc-500 mt-2">
+          Plan selected:{" "}
+          <span className="font-medium capitalize">
+            {PLANS[selectedPlan as keyof typeof PLANS].name}
+          </span>
+        </p>
+
+        {error && (
+          <div className="mt-4 bg-red-100 text-red-700 p-2 text-sm rounded">
+            {error}
+          </div>
+        )}
+
         <form onSubmit={handleSignup} className="mt-6 space-y-4">
+
+          {/* FULL NAME */}
           <div>
             <label className="block text-sm font-medium text-zinc-700">
               Full Name
@@ -69,11 +135,27 @@ export default function SignupPage() {
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="mt-1 w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-sky-500"
+              className="mt-1 w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-sky-500"
               placeholder="Your full name"
             />
           </div>
 
+          {/* ORGANIZATION NAME */}
+          <div>
+            <label className="block text-sm font-medium text-zinc-700">
+              Organization Name
+            </label>
+            <input
+              type="text"
+              required
+              value={orgName}
+              onChange={(e) => setOrgName(e.target.value)}
+              className="mt-1 w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-sky-500"
+              placeholder="Your company or organization"
+            />
+          </div>
+
+          {/* EMAIL */}
           <div>
             <label className="block text-sm font-medium text-zinc-700">
               Email
@@ -83,11 +165,12 @@ export default function SignupPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-sky-500"
+              className="mt-1 w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-sky-500"
               placeholder="you@business.com"
             />
           </div>
 
+          {/* PASSWORD */}
           <div>
             <label className="block text-sm font-medium text-zinc-700">
               Password
@@ -98,17 +181,18 @@ export default function SignupPage() {
               minLength={6}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-sky-500"
+              className="mt-1 w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-sky-500"
               placeholder="Minimum 6 characters"
             />
           </div>
 
+          {/* SUBMIT */}
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-sky-600 text-white py-3 rounded-lg font-medium hover:bg-sky-700 transition disabled:bg-sky-400"
+            className="w-full bg-sky-600 text-white py-3 rounded-lg font-medium hover:bg-sky-700 disabled:bg-sky-400"
           >
-            {loading ? "Creating..." : "Create Account"}
+            {loading ? "Creating account..." : "Create Account"}
           </button>
         </form>
 

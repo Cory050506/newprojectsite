@@ -1,0 +1,40 @@
+export const PLANS = {
+  basic: {
+    id: "basic",
+    name: "Basic",
+    priceMonthly: 1200, // cents
+    priceYearly: 12000,
+    limits: {
+      items: 15,
+      users: 1,
+      locations: 1,
+    },
+  },
+  pro: {
+    id: "pro",
+    name: "Pro",
+    priceMonthly: 2900,
+    priceYearly: 29000,
+    limits: {
+      items: Infinity,
+      users: 5,
+      locations: 1,
+    },
+  },
+  premium: {
+    id: "premium",
+    name: "Premium",
+    priceMonthly: 5900,
+    priceYearly: 59000,
+    limits: {
+      items: Infinity,
+      users: Infinity,
+      locations: 3,
+    },
+  },
+  enterprise: {
+    id: "enterprise",
+    name: "Enterprise",
+    custom: true,
+  },
+} as const;

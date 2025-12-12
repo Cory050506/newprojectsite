@@ -173,10 +173,10 @@ export default function Home() {
           <Reveal><h2 className="text-2xl font-semibold">Pricing</h2></Reveal>
 
           <div className="mt-6 grid md:grid-cols-2 gap-6">
-            <Reveal delay={0.1}><PriceCard label="Basic" price="$12/mo or $120/yr" desc="15 items • Email alerts • 1 device/location" button={{ label: "Subscribe", href: "/signup", primary: true }} /></Reveal>
-            <Reveal delay={0.2}><PriceCard label="Pro" price="$29/month or $290/yr" desc="Unlimited items • Email alerts • Up to 5 devices/1 location • Email support" button={{ label: "Signup", href: "/signup" }} /></Reveal>
-            <Reveal delay={0.2}><PriceCard label="Premium" price="$59/month or $590/yr" desc="Everything in Pro • Unlimted users/Multi-location(3 locations) • Dedicated onboarding support" button={{ label: "Signup", href: "/signup" }} /></Reveal>
-            <Reveal delay={0.3}><PriceCard label="Enterprise" price="Custom" desc="Coming soon • Expected early to late 2026" button={{ label: "Contact Sales", href: "/contact" }} /></Reveal>
+            <Reveal delay={0.1}><PriceCard label="Basic" price="$12/mo or $120/yr" desc="15 items • Email alerts • 1 device/location" button={{ label: "Subscribe", href: "/signup?plan=basic", primary: true }} /></Reveal>
+            <Reveal delay={0.2}><PriceCard label="Pro" price="$29/month or $290/yr" desc="Unlimited items • Email alerts • Up to 5 devices/1 location • Email support" button={{ label: "Subscribe", href: "/signup?plan=pro" }} /></Reveal>
+            <Reveal delay={0.2}><PriceCard label="Premium" price="$59/month or $590/yr" desc="Everything in Pro • Unlimted users/3 locations • Dedicated onboarding support" button={{ label: "Subscribe", href: "/signup?plan=premium" }} /></Reveal>
+            <Reveal delay={0.3}><PriceCard label="Enterprise" price="Custom" desc="Coming soon • Expected early to late 2026" button={{ label: "Coming soon", href: "/" }} /></Reveal>
           </div>
         </section>
 
