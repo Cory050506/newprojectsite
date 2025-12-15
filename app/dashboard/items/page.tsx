@@ -18,6 +18,7 @@ import { motion } from "framer-motion";
 import { sendAlertEmail } from "@/lib/email";
 import { PLANS } from "@/lib/plans";
 
+
 type ItemDoc = {
   id: string;
   name: string;
@@ -106,6 +107,7 @@ const [deleteItem, setDeleteItem] = useState<ItemDoc | null>(null);
   // ============================
   useEffect(() => {
     let unsubItems: (() => void) | undefined;
+    let unsubUser: (() => void) | undefined;
 
     const unsubAuth = onAuthStateChanged(auth, async (currentUser) => {
       if (!currentUser) {
@@ -115,9 +117,12 @@ const [deleteItem, setDeleteItem] = useState<ItemDoc | null>(null);
 
       setUser(currentUser);
 
-      const userSnap = await getDoc(doc(db, "users", currentUser.uid));
-      const rawPlan = userSnap.data()?.plan;
-      setPlan(rawPlan && rawPlan in PLANS ? rawPlan : "basic");
+      const userRef = doc(db, "users", currentUser.uid);
+
+unsubUser = onSnapshot(userRef, (snap) => {
+  const rawPlan = snap.data()?.plan;
+  setPlan(rawPlan && rawPlan in PLANS ? rawPlan : "basic");
+});
 
       unsubItems = onSnapshot(
         collection(db, "users", currentUser.uid, "items"),
@@ -167,6 +172,7 @@ const [deleteItem, setDeleteItem] = useState<ItemDoc | null>(null);
     return () => {
       unsubAuth();
       unsubItems?.();
+      unsubUser?.();
     };
   }, [router, alertedStatus]);
 
@@ -519,3 +525,4 @@ const [deleteItem, setDeleteItem] = useState<ItemDoc | null>(null);
     </motion.div>
   );
 }
+

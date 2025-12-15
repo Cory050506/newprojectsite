@@ -29,41 +29,46 @@ export default function RestockPage() {
   // ----------------------------
   // AUTH + LOAD ITEMS
   // ----------------------------
-  useEffect(() => {
-    let unsubItems: (() => void) | undefined;
+useEffect(() => {
+  let unsubItems: (() => void) | undefined;
+  let unsubUser: (() => void) | undefined;
 
-    const unsubAuth = onAuthStateChanged(auth, async (currentUser) => {
-      if (!currentUser) {
-        router.push("/login");
-        return;
-      }
+  const unsubAuth = onAuthStateChanged(auth, async (currentUser) => {
+    if (!currentUser) {
+      router.push("/login");
+      return;
+    }
 
-      setUser(currentUser);
+    setUser(currentUser);
 
-      // Load plan
-      const userSnap = await getDoc(doc(db, "users", currentUser.uid));
-      const rawPlan = userSnap.data()?.plan;
+    // Load plan
+    const userRef = doc(db, "users", currentUser.uid);
+
+    unsubUser = onSnapshot(userRef, (snap) => {
+      const rawPlan = snap.data()?.plan;
       setPlan(rawPlan && rawPlan in PLANS ? rawPlan : "basic");
-
-      // Load items
-      unsubItems = onSnapshot(
-        collection(db, "users", currentUser.uid, "items"),
-        (snap) => {
-          const data = snap.docs.map((d) => ({
-            id: d.id,
-            ...(d.data() as any),
-          })) as ItemDoc[];
-
-          setItems(data);
-        }
-      );
     });
 
-    return () => {
-      unsubAuth();
-      unsubItems?.();
-    };
-  }, [router]);
+    // Load items
+    unsubItems = onSnapshot(
+      collection(db, "users", currentUser.uid, "items"),
+      (snap) => {
+        const data = snap.docs.map((d) => ({
+          id: d.id,
+          ...(d.data() as any),
+        })) as ItemDoc[];
+
+        setItems(data);
+      }
+    );
+  });
+
+  return () => {
+    unsubAuth();
+    unsubItems?.();
+    unsubUser?.();
+  };
+}, [router]);
 
   // ----------------------------
   // INNER SPACE DETECTION
