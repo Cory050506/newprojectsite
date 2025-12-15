@@ -20,26 +20,28 @@ export default function SettingsPage() {
   const [user, setUser] = useState<any>(null);
   const [loadingUser, setLoadingUser] = useState(true);
 
-  // Preferences (theme removed)
+  // Profile
   const [name, setName] = useState("");
+
+  // Preferences
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [lowStockAlerts, setLowStockAlerts] = useState(true);
 
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPrefs, setSavingPrefs] = useState(false);
 
-  // Password fields
+  // Password
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [passwordMsg, setPasswordMsg] = useState<string | null>(null);
 
-  // Account deletion
+  // Delete account
   const [deletePassword, setDeletePassword] = useState("");
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
 
   const [error, setError] = useState<string | null>(null);
 
-  // AUTH CHECK
+  // AUTH
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
       if (!u) return router.push("/login");
@@ -49,15 +51,13 @@ export default function SettingsPage() {
     return () => unsub();
   }, [router]);
 
-  // LOAD USER PROFILE (theme removed)
+  // LOAD PROFILE
   useEffect(() => {
     if (!user) return;
 
     const ref = doc(db, "users", user.uid);
-
     const unsub = onSnapshot(ref, (snap) => {
       const data: any = snap.data() || {};
-
       setName(data.name || user.displayName || "");
       setEmailNotifications(data.emailNotifications ?? true);
       setLowStockAlerts(data.lowStockAlerts ?? true);
@@ -66,7 +66,6 @@ export default function SettingsPage() {
     return () => unsub();
   }, [user]);
 
-  // SAVE PROFILE
   async function handleSaveProfile(e: any) {
     e.preventDefault();
     if (!user) return;
@@ -86,7 +85,6 @@ export default function SettingsPage() {
     setSavingProfile(false);
   }
 
-  // SAVE PREFS (theme removed)
   async function handleSavePrefs() {
     if (!user) return;
 
@@ -105,20 +103,19 @@ export default function SettingsPage() {
     setSavingPrefs(false);
   }
 
-  // CHANGE PASSWORD
   async function handleChangePassword(e: any) {
     e.preventDefault();
     if (!user) return;
 
-    setPasswordMsg(null);
     setError(null);
+    setPasswordMsg(null);
 
     try {
       const cred = EmailAuthProvider.credential(user.email!, currentPassword);
       await reauthenticateWithCredential(user, cred);
       await updatePassword(user, newPassword);
 
-      setPasswordMsg("Password updated!");
+      setPasswordMsg("Password updated successfully.");
       setCurrentPassword("");
       setNewPassword("");
     } catch (err: any) {
@@ -126,7 +123,6 @@ export default function SettingsPage() {
     }
   }
 
-  // DELETE ACCOUNT
   async function handleDeleteAccount(e: any) {
     e.preventDefault();
     if (!user) return;
@@ -135,8 +131,6 @@ export default function SettingsPage() {
       setError('You must type "DELETE" to confirm.');
       return;
     }
-
-    setError(null);
 
     try {
       const cred = EmailAuthProvider.credential(user.email!, deletePassword);
@@ -168,6 +162,14 @@ export default function SettingsPage() {
     >
       <h1 className="text-3xl font-bold">Settings</h1>
 
+      <div className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+        Signed in as{" "}
+        <span className="font-medium text-slate-900 dark:text-slate-100">
+          {user.displayName || "User"}
+        </span>{" "}
+        • {user.email}
+      </div>
+
       {error && (
         <div className="mt-4 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 px-4 py-2 rounded">
           {error}
@@ -175,80 +177,66 @@ export default function SettingsPage() {
       )}
 
       {/* PROFILE */}
-      <section className="mt-8 bg-white dark:bg-slate-800 p-6 rounded-xl shadow border border-slate-200 dark:border-slate-700 max-w-2xl">
+      <section className="mt-8 bg-white dark:bg-slate-800 p-6 rounded-xl border max-w-2xl">
         <h2 className="text-xl font-semibold">Profile</h2>
 
         <form onSubmit={handleSaveProfile} className="mt-4 space-y-4">
-          <div>
-            <label className="text-sm">Full Name</label>
-            <input
-              type="text"
-              className="mt-1 w-full p-3 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </div>
+          <input
+            className="w-full p-3 rounded-lg border dark:bg-slate-700"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Full name"
+          />
 
-          <div>
-            <label className="text-sm">Email</label>
-            <input
-              type="email"
-              readOnly
-              className="mt-1 w-full p-3 rounded-lg border bg-slate-100 dark:bg-slate-700 dark:border-slate-600"
-              value={user.email}
-            />
-          </div>
+          <input
+            readOnly
+            className="w-full p-3 rounded-lg border bg-slate-100 dark:bg-slate-700"
+            value={user.email}
+          />
 
-          <button
-            type="submit"
-            disabled={savingProfile}
-            className="px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 disabled:opacity-60"
-          >
+          <button className="px-4 py-2 bg-sky-600 text-white rounded-lg">
             {savingProfile ? "Saving…" : "Save Profile"}
           </button>
         </form>
       </section>
 
-      {/* PREFERENCES (no theme setting anymore) */}
-      <section className="mt-8 bg-white dark:bg-slate-800 p-6 rounded-xl shadow border border-slate-200 dark:border-slate-700 max-w-2xl">
+      {/* PREFERENCES */}
+      <section className="mt-8 bg-white dark:bg-slate-800 p-6 rounded-xl border max-w-2xl">
         <h2 className="text-xl font-semibold">Preferences</h2>
 
         <div className="mt-4 space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="font-medium text-sm">Email Notifications</div>
-              <div className="text-xs text-slate-500 dark:text-slate-400">
-                Receive email alerts for low or due items.
+          {[{
+            label: "Email Notifications",
+            value: emailNotifications,
+            setter: setEmailNotifications,
+            desc: "Receive email alerts for low or due items.",
+          },{
+            label: "Low Stock Alerts",
+            value: lowStockAlerts,
+            setter: setLowStockAlerts,
+            desc: "Show warnings when items are nearly empty.",
+          }].map((opt) => (
+            <div key={opt.label} className="flex items-center justify-between">
+              <div>
+                <div className="text-sm font-medium">{opt.label}</div>
+                <div className="text-xs text-slate-500">{opt.desc}</div>
               </div>
+              <label className="relative inline-flex cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={opt.value}
+                  onChange={(e) => opt.setter(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-slate-300 rounded-full peer-checked:bg-sky-600"></div>
+                <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition peer-checked:translate-x-5"></div>
+              </label>
             </div>
-            <input
-              type="checkbox"
-              checked={emailNotifications}
-              onChange={(e) => setEmailNotifications(e.target.checked)}
-              className="h-4 w-4"
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="font-medium text-sm">Low Stock Alerts</div>
-              <div className="text-xs text-slate-500 dark:text-slate-400">
-                Show warnings when items are nearly empty.
-              </div>
-            </div>
-            <input
-              type="checkbox"
-              checked={lowStockAlerts}
-              onChange={(e) => setLowStockAlerts(e.target.checked)}
-              className="h-4 w-4"
-            />
-          </div>
+          ))}
 
           <button
-            type="button"
-            disabled={savingPrefs}
             onClick={handleSavePrefs}
-            className="px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 disabled:opacity-60"
+            className="px-4 py-2 bg-sky-600 text-white rounded-lg"
           >
             {savingPrefs ? "Saving…" : "Save Preferences"}
           </button>
@@ -256,17 +244,14 @@ export default function SettingsPage() {
       </section>
 
       {/* SECURITY */}
-      <section className="mt-8 bg-white dark:bg-slate-800 p-6 rounded-xl shadow border border-slate-200 dark:border-slate-700 max-w-2xl">
+      <section className="mt-8 bg-white dark:bg-slate-800 p-6 rounded-xl border max-w-2xl">
         <h2 className="text-xl font-semibold">Security</h2>
 
-        {/* PASSWORD */}
-        <form onSubmit={handleChangePassword} className="mt-4 space-y-3 pb-5 border-b dark:border-slate-700">
-          <div className="font-medium text-sm">Change Password</div>
-
+        <form onSubmit={handleChangePassword} className="mt-4 space-y-3">
           <input
             type="password"
             placeholder="Current password"
-            className="w-full p-3 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+            className="w-full p-3 rounded-lg border dark:bg-slate-700"
             value={currentPassword}
             onChange={(e) => setCurrentPassword(e.target.value)}
           />
@@ -274,44 +259,53 @@ export default function SettingsPage() {
           <input
             type="password"
             placeholder="New password"
-            className="w-full p-3 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+            className="w-full p-3 rounded-lg border dark:bg-slate-700"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
           />
 
-          <button className="px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-900">
+          <p className="text-xs text-slate-500">
+            Password must be at least 6 characters.
+          </p>
+
+          <button className="px-4 py-2 bg-slate-800 text-white rounded-lg">
             Update Password
           </button>
 
           {passwordMsg && (
-            <p className="text-xs text-emerald-500 mt-1">{passwordMsg}</p>
+            <p className="text-xs text-emerald-500">{passwordMsg}</p>
           )}
         </form>
 
-        {/* DELETE ACCOUNT */}
-        <form onSubmit={handleDeleteAccount} className="mt-5 space-y-3">
-          <div className="font-medium text-sm text-red-600">Delete Account</div>
+        {/* DANGER ZONE */}
+        <div className="mt-6 border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/40 p-4 rounded-lg">
+          <div className="font-semibold text-red-600 mb-2">Danger Zone</div>
 
-          <input
-            type="password"
-            placeholder="Password for verification"
-            className="w-full p-3 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
-            value={deletePassword}
-            onChange={(e) => setDeletePassword(e.target.value)}
-          />
+          <form onSubmit={handleDeleteAccount} className="space-y-3">
+            <input
+              type="password"
+              placeholder="Password"
+              className="w-full p-3 rounded-lg border dark:bg-slate-700"
+              value={deletePassword}
+              onChange={(e) => setDeletePassword(e.target.value)}
+            />
 
-          <input
-            type="text"
-            placeholder='Type "DELETE" to confirm'
-            className="w-full p-3 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
-            value={deleteConfirmText}
-            onChange={(e) => setDeleteConfirmText(e.target.value)}
-          />
+            <input
+              type="text"
+              placeholder='Type "DELETE" to confirm'
+              className="w-full p-3 rounded-lg border dark:bg-slate-700"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+            />
 
-          <button className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
-            Permanently Delete Account
-          </button>
-        </form>
+            <button
+              disabled={deleteConfirmText !== "DELETE"}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg disabled:opacity-50"
+            >
+              Permanently Delete Account
+            </button>
+          </form>
+        </div>
       </section>
     </motion.main>
   );

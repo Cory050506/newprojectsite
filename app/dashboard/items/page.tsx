@@ -23,6 +23,9 @@ type ItemDoc = {
   name: string;
   vendor?: string;
   daysLast: number;
+  notes?: string;        // ✅ NEW
+  category?: string;     // 🧱 future
+  locationId?: string;   // 🧱 future (Pro+)
   createdAt?: any;
 };
 
