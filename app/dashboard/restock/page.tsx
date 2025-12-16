@@ -63,16 +63,7 @@ const [restockingItem, setRestockingItem] = useState<ItemDoc | null>(null);
   const isProOrHigher =
     plan === "pro" || plan === "premium" || plan === "enterprise";
 
-  // ----------------------------
-  // AUTH + LOAD DATA
-  // ----------------------------
-  useEffect(() => {
-    let unsubItems: (() => void) | undefined;
-    let unsubVendors: (() => void) | undefined;
-    let unsubUser: (() => void) | undefined;
-    let unsubOrg: (() => void) | undefined;
-
-    // ----------------------------
+      // ----------------------------
 // RESTOCK CONFIRM TRIGGER
 // ----------------------------
 useEffect(() => {
@@ -85,6 +76,21 @@ useEffect(() => {
   setRestockingItem(item);
   setShowRestockConfirm(true);
 }, [focusedItemId, items]);
+  
+  
+  
+    // ----------------------------
+  // AUTH + LOAD DATA
+  // ----------------------------
+  
+  
+  useEffect(() => {
+    let unsubItems: (() => void) | undefined;
+    let unsubVendors: (() => void) | undefined;
+    let unsubUser: (() => void) | undefined;
+    let unsubOrg: (() => void) | undefined;
+
+
 
     const unsubAuth = onAuthStateChanged(auth, (currentUser) => {
       if (!currentUser) {
