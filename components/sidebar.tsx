@@ -143,7 +143,7 @@ export default function Sidebar() {
           {plan !== "enterprise" && (
             <button
               onClick={() =>
-                (window.location.href = "/dashboard/settings/billing")
+                (window.location.href = "/dashboard/settings#billing")
               }
               className="mt-2 w-full text-xs bg-sky-600 hover:bg-sky-700 text-white py-1.5 rounded-md"
             >

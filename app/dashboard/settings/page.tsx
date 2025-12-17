@@ -14,6 +14,25 @@ import {
 import { doc, onSnapshot, updateDoc, deleteDoc } from "firebase/firestore";
 import { motion } from "framer-motion";
 
+export const PLANS = {
+  basic: {
+    name: "Basic",
+    description: "Manual tracking with limited alerts",
+  },
+  pro: {
+    name: "Pro",
+    description: "Automated alerts and smart restock reminders",
+  },
+  premium: {
+    name: "Premium",
+    description: "Advanced automation and reporting",
+  },
+  enterprise: {
+    name: "Enterprise",
+    description: "Custom workflows and priority support",
+  },
+};
+
 export default function SettingsPage() {
   const router = useRouter();
 
@@ -22,6 +41,8 @@ export default function SettingsPage() {
 
   // Profile
   const [name, setName] = useState("");
+
+  
 
   // Preferences
   const [emailNotifications, setEmailNotifications] = useState(true);
@@ -40,6 +61,10 @@ export default function SettingsPage() {
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
 
   const [error, setError] = useState<string | null>(null);
+
+  // Billing
+const [plan, setPlan] = useState<keyof typeof PLANS>("basic");
+const [orgId, setOrgId] = useState<string | null>(null);
 
   // AUTH
   useEffect(() => {
@@ -65,6 +90,27 @@ export default function SettingsPage() {
 
     return () => unsub();
   }, [user]);
+
+  
+
+  useEffect(() => {
+  if (!user) return;
+
+  const unsub = onSnapshot(doc(db, "users", user.uid), (snap) => {
+    const data = snap.data();
+    if (!data?.orgId) return;
+
+    setOrgId(data.orgId);
+
+    const orgRef = doc(db, "organizations", data.orgId);
+    onSnapshot(orgRef, (orgSnap) => {
+      const rawPlan = orgSnap.data()?.plan;
+      setPlan(rawPlan && rawPlan in PLANS ? rawPlan : "basic");
+    });
+  });
+
+  return () => unsub();
+}, [user]);
 
   async function handleSaveProfile(e: any) {
     e.preventDefault();
@@ -243,6 +289,57 @@ export default function SettingsPage() {
         </div>
       </section>
 
+      {/* BILLING */}
+<section className="mt-8 bg-white dark:bg-slate-800 p-6 rounded-xl border max-w-2xl">
+  <h2 className="text-xl font-semibold">Billing</h2>
+
+  <div className="mt-4 space-y-4">
+    <div className="flex items-center justify-between">
+      <div>
+        <div className="text-sm font-medium text-slate-900 dark:text-slate-100">
+          Current Plan
+        </div>
+        <div className="text-xs text-slate-500">
+          Manage your subscription and billing
+        </div>
+      </div>
+
+      <span
+        className={`text-xs px-2 py-1 rounded font-medium ${
+          plan === "basic"
+            ? "bg-slate-200 dark:bg-slate-700"
+            : "bg-emerald-200 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200"
+        }`}
+      >
+        {PLANS[plan].name}
+      </span>
+    </div>
+
+    <div className="text-sm text-slate-600 dark:text-slate-400">
+      {PLANS[plan].description}
+    </div>
+
+    <div className="border-t pt-4 flex justify-between items-center">
+      <div className="text-xs text-slate-500">
+        {plan === "basic"
+          ? "Upgrade to unlock automation and alerts"
+          : "You’re on an active paid plan"}
+      </div>
+
+      <button
+        onClick={() => router.push("/pricing")}
+        className={`px-4 py-2 rounded-lg text-sm font-medium ${
+          plan === "basic"
+            ? "bg-sky-600 hover:bg-sky-700 text-white"
+            : "bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200"
+        }`}
+      >
+        {plan === "basic" ? "Upgrade Plan" : "Manage Billing"}
+      </button>
+    </div>
+  </div>
+</section>
+
       {/* SECURITY */}
       <section className="mt-8 bg-white dark:bg-slate-800 p-6 rounded-xl border max-w-2xl">
         <h2 className="text-xl font-semibold">Security</h2>
@@ -309,4 +406,6 @@ export default function SettingsPage() {
       </section>
     </motion.main>
   );
+
+  
 }
