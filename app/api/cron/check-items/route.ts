@@ -3,15 +3,13 @@ import { db } from "@/lib/firebaseAdmin";
 import { Resend } from "resend";
 import { Timestamp } from "firebase-admin/firestore";
 
-const resend = new Resend(process.env.RESEND_API_KEY!);
+if (!process.env.RESEND_API_KEY) {
+  throw new Error("Missing RESEND_API_KEY");
+}
 
-export async function GET(req: Request) {
-  // 🔐 Protect endpoint
-  const authHeader = req.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+const resend = new Resend(process.env.RESEND_API_KEY);
 
+export async function GET() {
   const usersSnap = await db.collection("users").get();
   const now = new Date();
 
@@ -48,10 +46,11 @@ export async function GET(req: Request) {
 
       if (daysLeft > 3) continue;
 
-      // 🚫 Prevent duplicate alerts
+      // 🚫 Prevent duplicate alerts (24h cooldown)
       const lastAlert = item.lastAlertSentAt?.toDate?.();
       if (lastAlert) {
-        const hoursSince = (now.getTime() - lastAlert.getTime()) / 3600000;
+        const hoursSince =
+          (now.getTime() - lastAlert.getTime()) / 3600000;
         if (hoursSince < 24) continue;
       }
 
