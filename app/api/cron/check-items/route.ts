@@ -69,97 +69,136 @@ export async function GET() {
         to: user.email,
         subject,
         html: `
-  <div style="
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-    background-color: #f1f5f9;
-    padding: 32px;
-  ">
-    <div style="
-      max-width: 520px;
-      margin: 0 auto;
-      background-color: #ffffff;
-      border-radius: 12px;
-      padding: 24px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.06);
-    ">
-      <!-- HEADER -->
-      <h1 style="
-        margin: 0 0 8px 0;
-        font-size: 22px;
-        color: #0f172a;
-      ">
-        ${daysLeft <= 0 ? "🚨 Item Out of Stock" : "⚠️ Item Running Low"}
-      </h1>
+<!DOCTYPE html>
+<html>
+  <body style="margin:0; padding:0; background-color:#f1f5f9;">
+    <!-- FULL WIDTH WRAPPER -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f1f5f9; padding:32px 0;">
+      <tr>
+        <td align="center">
 
-      <p style="
-        margin: 0 0 20px 0;
-        font-size: 15px;
-        color: #475569;
-      ">
-        This is a restock alert from <strong>Restok</strong>.
-      </p>
+          <!-- CONTENT CARD -->
+          <table width="520" cellpadding="0" cellspacing="0"
+            style="
+              background-color:#ffffff;
+              border-radius:12px;
+              padding:24px;
+              font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+              box-shadow:0 10px 25px rgba(0,0,0,0.06);
+            "
+          >
+            <tr>
+              <td>
 
-      <!-- ITEM CARD -->
-      <div style="
-        background-color: ${daysLeft <= 0 ? "#fee2e2" : "#fef3c7"};
-        border: 1px solid ${daysLeft <= 0 ? "#fecaca" : "#fde68a"};
-        border-radius: 10px;
-        padding: 16px;
-        margin-bottom: 20px;
-      ">
-        <p style="
-          margin: 0;
-          font-size: 16px;
-          font-weight: 600;
-          color: #0f172a;
-        ">
-          ${item.name}
-        </p>
+                <!-- LOGO -->
+                <div style="text-align:center; margin-bottom:20px;">
+                  <img
+                    src="https://getrestok.com/logo.svg"
+                    alt="Restok"
+                    width="120"
+                    style="display:block; margin:0 auto;"
+                  />
+                </div>
 
-        <p style="
-          margin: 6px 0 0 0;
-          font-size: 14px;
-          color: #7c2d12;
-        ">
-          ${
-            daysLeft <= 0
-              ? "This item has run out and needs restocking."
-              : `This item will run out in <strong>${daysLeft} days</strong>.`
-          }
-        </p>
-      </div>
+                <!-- HEADER -->
+                <h1 style="
+                  margin:0 0 8px 0;
+                  font-size:22px;
+                  color:#0f172a;
+                ">
+                  ${daysLeft <= 0 ? "🚨 Item Out of Stock" : "⚠️ Item Running Low"}
+                </h1>
 
-      <!-- CTA BUTTON -->
-      <a href="https://getrestok.com/dashboard/restock"
-        style="
-          display: block;
-          width: 100%;
-          text-align: center;
-          background-color: #0ea5e9;
-          color: #ffffff;
-          text-decoration: none;
-          padding: 14px 0;
-          border-radius: 8px;
-          font-weight: 600;
-          font-size: 15px;
-        "
-      >
-        Review & Restock Items
-      </a>
+                <p style="
+                  margin:0 0 20px 0;
+                  font-size:15px;
+                  color:#475569;
+                ">
+                  This is a restock alert from <strong>Restok</strong>.
+                </p>
 
-      <!-- FOOTER -->
-      <p style="
-        margin-top: 20px;
-        font-size: 12px;
-        color: #64748b;
-        text-align: center;
-      ">
-        You’re receiving this email because you use Restok to track supplies.
-        <br />
-        © ${new Date().getFullYear()} Restok
-      </p>
-    </div>
-  </div>
+                <!-- ITEM CARD -->
+                <table width="100%" cellpadding="0" cellspacing="0"
+                  style="
+                    background-color:${daysLeft <= 0 ? "#fee2e2" : "#fef3c7"};
+                    border:1px solid ${daysLeft <= 0 ? "#fecaca" : "#fde68a"};
+                    border-radius:10px;
+                    padding:16px;
+                    margin-bottom:20px;
+                  "
+                >
+                  <tr>
+                    <td>
+                      <p style="
+                        margin:0;
+                        font-size:16px;
+                        font-weight:600;
+                        color:#0f172a;
+                      ">
+                        ${item.name}
+                      </p>
+
+                      <p style="
+                        margin:6px 0 0 0;
+                        font-size:14px;
+                        color:#7c2d12;
+                      ">
+                        ${
+                          daysLeft <= 0
+                            ? "This item has run out and needs restocking."
+                            : `This item will run out in <strong>${daysLeft} days</strong>.`
+                        }
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- CTA -->
+                <table width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td align="center">
+                      <a
+                        href="https://getrestok.com/dashboard/restock"
+                        style="
+                          display:inline-block;
+                          width:100%;
+                          background-color:#0ea5e9;
+                          color:#ffffff;
+                          text-decoration:none;
+                          padding:14px 0;
+                          border-radius:8px;
+                          font-weight:600;
+                          font-size:15px;
+                          text-align:center;
+                        "
+                      >
+                        Review & Restock Items
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- FOOTER -->
+                <p style="
+                  margin-top:20px;
+                  font-size:12px;
+                  color:#64748b;
+                  text-align:center;
+                ">
+                  You’re receiving this email because you use Restok to track supplies.
+                  <br />
+                  © ${new Date().getFullYear()} Restok
+                </p>
+
+              </td>
+            </tr>
+          </table>
+
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
 `,
       });
 
