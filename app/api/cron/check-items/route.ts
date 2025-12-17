@@ -47,12 +47,12 @@ export async function GET() {
       if (daysLeft > 3) continue;
 
       // 🚫 Prevent duplicate alerts (24h cooldown)
-      const lastAlert = item.lastAlertSentAt?.toDate?.();
-      if (lastAlert) {
-        const hoursSince =
-          (now.getTime() - lastAlert.getTime()) / 3600000;
-        if (hoursSince < 24) continue;
-      }
+      //const lastAlert = item.lastAlertSentAt?.toDate?.();
+      //if (lastAlert) {
+        //const hoursSince =
+          //(now.getTime() - lastAlert.getTime()) / 3600000;
+        //if (hoursSince < 24) continue;
+      //}
 
       const subject =
         daysLeft <= 0
