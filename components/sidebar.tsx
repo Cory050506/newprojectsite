@@ -61,7 +61,7 @@ export default function Sidebar() {
       "
     >
       {/* Logo */}
-      <img src="/logo.png" alt="Restok Logo" className="w-12 h-12 mb-4" />
+      <img src="/logo.svg" alt="Restok Logo" className="w-12 h-12 mb-4" />
       <motion.h1
         className="text-2xl font-bold mb-8 text-slate-800 dark:text-slate-100"
         initial={{ opacity: 0, x: -10 }}
